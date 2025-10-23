@@ -1,0 +1,8 @@
+main: de.knabbiii.spawnelytra.SpawnElytra
+version: 2.0
+api-version: 1.21
+author: CoolePizza
+name: SpawnElytra
+description: "Enable elytra-like flight mechanics at spawn without requiring elytra wings. Double-jump to fly and boost with F key!"
+website: https://github.com/Knabbiii/craftattack-spawn-elytra
+softdepend: []
