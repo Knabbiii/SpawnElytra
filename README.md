@@ -62,7 +62,12 @@ This is an updated and improved version of the original plugin with bug fixes an
 
 ## 📜 License
 
-This project maintains the same spirit and licensing as the original work by CoolePizza.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+**Original Developer:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/)  
+**Original Plugin:** [SpawnElytra on SpigotMC](https://www.spigotmc.org/resources/spawnelytra.97565/)
+
+This is an updated and improved version of the original plugin with bug fixes and enhanced compatibility for modern Minecraft versions.
 
 ---
 
