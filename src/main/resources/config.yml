@@ -15,7 +15,10 @@
 world: world
 
 # Radius around spawn where players can activate elytra flight
-# Measured in blocks from the world spawn point
+# Measured in blocks from the world spawn point (the exact coordinates where 
+# players spawn when they first join the server or use /spawn command)
+# The spawn point is determined by the world's spawn location, which can be 
+# set using /setworldspawn command
 # Recommended: 50-200 blocks depending on your spawn area size
 spawnRadius: 50
 

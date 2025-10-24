@@ -1,31 +1,42 @@
-# 🚀 SpawnElytra - Enhanced Edition
+<div align="center">
+
+![SpawnElytra Banner](.github/assets/spawnelytra-banner.png)
+
+[![Downloads](https://img.shields.io/modrinth/dt/YOUR_PROJECT_ID?logo=modrinth&style=flat&label=Downloads&color=00AF5C)](https://modrinth.com/plugin/spawnelytra)
+[![CodeFactor](https://www.codefactor.io/repository/github/knabbiii/spawnelytra/badge)](https://www.codefactor.io/repository/github/knabbiii/spawnelytra)
+[![License](https://img.shields.io/github/license/knabbiii/spawnelytra?style=flat&label=License)](LICENSE)
+[![GitHub release](https://img.shields.io/github/v/release/knabbiii/spawnelytra?style=flat&label=Release)](https://github.com/Knabbiii/spawnelytra/releases)
+
+</div>
 
 > **You might know this feature from CraftAttack - this is exactly the same, but better!**
 
 A Minecraft plugin that enables elytra-like flight mechanics at spawn without requiring actual elytra wings. Double-jump to soar through the air and boost yourself with the F key!
 
-**✨ Enhanced with features inspired by [blax-k's SpawnElytra implementation](https://github.com/blax-k/SpawnElytra)**
+**Enhanced with features inspired by [blax-k's SpawnElytra implementation](https://github.com/blax-k/SpawnElytra)**
 
-## ✨ Features
+## Features
 
-- 🏃‍♂️ **Double-jump to fly** - Activate elytra gliding anywhere within the spawn radius
-- 🚀 **Enhanced boost mechanics** - Press F (swap hands) to get a speed boost while flying
-- 🌍 **World-specific** - Configure which world the feature works in
-- 🛡️ **No fall damage** - Players won't take damage while using the elytra
-- ⚡ **Lightweight** - Minimal performance impact with efficient event handling
-- 🎵 **Sound effects** - Configurable boost sounds for better feedback
-- 🔧 **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
-- 🎯 **Permission system** - Fine-grained control over who can use what features
-- 💬 **Better messages** - Enhanced action bar messages with keybind support
+- **Double-jump to fly** - Activate elytra gliding anywhere within the spawn radius
+- **Enhanced boost mechanics** - Press F (swap hands) to get a speed boost while flying
+- **World-specific** - Configure which world the feature works in
+- **No fall damage** - Players won't take damage while using the elytra
+- **Lightweight** - Minimal performance impact with efficient event handling
+- **Sound effects** - Configurable boost sounds for better feedback
+- **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
+- **Permission system** - Fine-grained control over who can use what features
+- **Better messages** - Enhanced action bar messages with keybind support
 
-## 📥 Installation
+## Installation
 
 1. Download the latest `.jar` file from the [releases page](https://github.com/Knabbiii/craftattack-spawn-elytra/releases)
 2. Place it in your server's `plugins` folder
 3. Restart your server
 4. Configure the plugin in `plugins/SpawnElytra/config.yml`
 
-## ⚙️ Configuration
+## Configuration
+
+The plugin uses the **world spawn point** as the center for flight activation. This is the exact location where players spawn when they first join the server or use the `/spawn` command. You can set this location using the `/setworldspawn` command.
 
 ```yaml
 spawnRadius: 50           # Radius around spawn where players can start flying
@@ -55,7 +66,7 @@ showActivationMessage: true      # Show flight activation message
 | `showBoostMessage` | Show "Boost activated!" message | `true` |
 | `showActivationMessage` | Show activation message with F key hint | `true` |
 
-## 🎮 How to Use
+## How to Use
 
 1. **Enter the spawn area** (within the configured radius)
 2. **Double-jump** (press space twice quickly) to start flying
@@ -63,7 +74,7 @@ showActivationMessage: true      # Show flight activation message
 4. **Press F** (swap hands) to boost forward while flying
 5. **Land** to stop flying
 
-## 🔧 Commands
+## Commands
 
 | Command | Permission | Description |
 |---------|------------|-------------|
@@ -72,7 +83,7 @@ showActivationMessage: true      # Show flight activation message
 
 **Aliases:** `/se`, `/selytra`
 
-## 🔒 Permissions
+## Permissions
 
 | Permission | Description | Default |
 |------------|-------------|---------|
@@ -81,13 +92,13 @@ showActivationMessage: true      # Show flight activation message
 | `spawnelytra.admin` | Allows access to admin commands | `op` |
 | `spawnelytra.*` | Grants all permissions | `op` |
 
-## 🔧 Requirements
+## Requirements
 
-- **Minecraft:** 1.21+
+- **Minecraft:** 1.20.1+ (compatible with 1.20.x and 1.21.x)
 - **Server:** Spigot, Paper, or compatible
-- **Java:** 21+
+- **Java:** 17+
 
-## 🙏 Credits
+## Credits
 
 **Original Concept:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/) - [Original SpawnElytra](https://www.spigotmc.org/resources/spawnelytra.97565/)
 
@@ -99,7 +110,7 @@ showActivationMessage: true      # Show flight activation message
 
 **This Version:** Updated, enhanced, and optimized implementation with bug fixes for modern Minecraft versions, combining the best ideas from both original works.
 
-## 📜 License
+## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
@@ -110,4 +121,4 @@ This is an updated and improved version of the original plugin with bug fixes an
 
 ---
 
-*Made with ❤️ for the Minecraft community*
+*Made with care for the Minecraft community*

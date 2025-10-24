@@ -11,11 +11,13 @@ repositories {
 }
 
 dependencies {
-    compileOnly("org.spigotmc:spigot-api:1.21.10-R0.1-SNAPSHOT")
+    // Use 1.20.1 API for broader compatibility with 1.20.x and 1.21.x
+    compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+    // Use Java 17 for better compatibility with 1.20.x servers
+    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
 }
 
 // Configure JAR naming

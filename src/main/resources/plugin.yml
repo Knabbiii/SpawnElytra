@@ -1,6 +1,6 @@
 main: de.knabbiii.spawnelytra.SpawnElytra
 version: 2.1
-api-version: 1.21
+api-version: 1.20
 author: Knabbiii
 name: SpawnElytra
 description: "Enable elytra-like flight mechanics at spawn without requiring elytra wings. Double-jump to fly and boost with F key! Enhanced with features inspired by blax-k's implementation."
