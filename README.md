@@ -4,7 +4,7 @@
 
 [![Downloads](https://img.shields.io/modrinth/dt/YOUR_PROJECT_ID?logo=modrinth&style=flat&label=Downloads&color=00AF5C)](https://modrinth.com/plugin/spawnelytra)
 [![CodeFactor](https://www.codefactor.io/repository/github/knabbiii/spawnelytra/badge)](https://www.codefactor.io/repository/github/knabbiii/spawnelytra)
-[![License](https://img.shields.io/github/license/knabbiii/spawnelytra?style=flat&label=License)](LICENSE)
+[![License: MIT](https://img.shields.io/github/license/Knabbiii/SpawnElytra?color=3fb950&label=License&logo=github)](https://opensource.org/licenses/MIT)
 [![GitHub release](https://img.shields.io/github/v/release/knabbiii/spawnelytra?style=flat&label=Release)](https://github.com/Knabbiii/spawnelytra/releases)
 
 </div>
