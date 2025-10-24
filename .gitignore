@@ -31,3 +31,6 @@ Thumbs.db
 *.class
 *.jar
 !gradle-wrapper.jar
+
+# Reference/external code (not part of our project)
+buggynewpluggin/

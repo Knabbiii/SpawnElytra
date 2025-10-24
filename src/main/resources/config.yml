@@ -3,3 +3,15 @@ multiplyValue: 5
 boostEnabled: true
 world: world
 message: "Press %key% to boost yourself."
+
+# Enhanced features inspired by blax-k's implementation
+boostSound: ENTITY_BAT_TAKEOFF
+boostDirection: forward
+showBoostMessage: true
+showActivationMessage: true
+
+# Permission settings
+permissions:
+  use: spawnelytra.use
+  boost: spawnelytra.useboost
+  admin: spawnelytra.admin
