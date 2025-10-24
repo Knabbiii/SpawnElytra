@@ -1,16 +1,22 @@
-# 🚀 SpawnElytra
+# 🚀 SpawnElytra - Enhanced Edition
 
-> **You might know this feature from CraftAttack - this is exactly the same!**
+> **You might know this feature from CraftAttack - this is exactly the same, but better!**
 
 A Minecraft plugin that enables elytra-like flight mechanics at spawn without requiring actual elytra wings. Double-jump to soar through the air and boost yourself with the F key!
+
+**✨ Enhanced with features inspired by [blax-k's SpawnElytra implementation](https://github.com/blax-k/SpawnElytra)**
 
 ## ✨ Features
 
 - 🏃‍♂️ **Double-jump to fly** - Activate elytra gliding anywhere within the spawn radius
-- 🚀 **Boost mechanics** - Press F (swap hands) to get a speed boost while flying
+- 🚀 **Enhanced boost mechanics** - Press F (swap hands) to get a speed boost while flying
 - 🌍 **World-specific** - Configure which world the feature works in
 - 🛡️ **No fall damage** - Players won't take damage while using the elytra
 - ⚡ **Lightweight** - Minimal performance impact with efficient event handling
+- 🎵 **Sound effects** - Configurable boost sounds for better feedback
+- 🔧 **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
+- 🎯 **Permission system** - Fine-grained control over who can use what features
+- 💬 **Better messages** - Enhanced action bar messages with keybind support
 
 ## 📥 Installation
 
@@ -27,6 +33,12 @@ multiplyValue: 5          # Velocity multiplier for the boost (F key)
 boostEnabled: true        # Whether the boost feature is enabled
 world: "world"           # The world where the feature works
 message: "Press %key% to boost yourself."  # Action bar message (%key% = F key)
+
+# Enhanced features
+boostSound: ENTITY_BAT_TAKEOFF    # Sound played when boosting
+boostDirection: forward           # Direction of boost: 'forward' or 'upward'
+showBoostMessage: true           # Show boost activation message
+showActivationMessage: true      # Show flight activation message
 ```
 
 ### Configuration Options
@@ -38,6 +50,10 @@ message: "Press %key% to boost yourself."  # Action bar message (%key% = F key)
 | `boostEnabled` | Whether the boost feature is enabled | `true` |
 | `world` | The world where the feature works | `"world"` |
 | `message` | Action bar message shown to players (`%key%` = F key) | English message |
+| `boostSound` | Sound played when using boost | `ENTITY_BAT_TAKEOFF` |
+| `boostDirection` | Direction of boost: `forward` or `upward` | `forward` |
+| `showBoostMessage` | Show "Boost activated!" message | `true` |
+| `showActivationMessage` | Show activation message with F key hint | `true` |
 
 ## 🎮 How to Use
 
@@ -47,6 +63,24 @@ message: "Press %key% to boost yourself."  # Action bar message (%key% = F key)
 4. **Press F** (swap hands) to boost forward while flying
 5. **Land** to stop flying
 
+## 🔧 Commands
+
+| Command | Permission | Description |
+|---------|------------|-------------|
+| `/spawnelytra info` | None | Show plugin information and current config |
+| `/spawnelytra reload` | `spawnelytra.admin` | Reload plugin configuration |
+
+**Aliases:** `/se`, `/selytra`
+
+## 🔒 Permissions
+
+| Permission | Description | Default |
+|------------|-------------|---------|
+| `spawnelytra.use` | Allows using elytra flight at spawn | `true` |
+| `spawnelytra.useboost` | Allows using boost functionality | `true` |  
+| `spawnelytra.admin` | Allows access to admin commands | `op` |
+| `spawnelytra.*` | Grants all permissions | `op` |
+
 ## 🔧 Requirements
 
 - **Minecraft:** 1.21+
@@ -55,10 +89,15 @@ message: "Press %key% to boost yourself."  # Action bar message (%key% = F key)
 
 ## 🙏 Credits
 
-**Original Developer:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/)  
-**Original Plugin:** [SpawnElytra on SpigotMC](https://www.spigotmc.org/resources/spawnelytra.97565/)
+**Original Concept:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/) - [Original SpawnElytra](https://www.spigotmc.org/resources/spawnelytra.97565/)
 
-This is an updated and improved version of the original plugin with bug fixes and enhanced compatibility for modern Minecraft versions.
+**Enhanced Features Inspired By:** [blax-k](https://github.com/blax-k) - [SpawnElytra Implementation](https://github.com/blax-k/SpawnElytra)
+- Command system and admin features
+- Sound effects and enhanced boost mechanics  
+- Better configuration options
+- Permission system improvements
+
+**This Version:** Updated, enhanced, and optimized implementation with bug fixes for modern Minecraft versions, combining the best ideas from both original works.
 
 ## 📜 License
 

@@ -6,6 +6,7 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.KeybindComponent;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.EntityType;
@@ -19,6 +20,7 @@ import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerChangedWorldEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,6 +36,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final List<Player> flying = new ArrayList<>();
     private final List<Player> boosted = new ArrayList<>();
     private final String message;
+    
+    // Enhanced features inspired by blax-k's implementation
+    private final Sound boostSound;
+    private final String boostDirection;
+    private final boolean showBoostMessage;
+    private final boolean showActivationMessage;
 
     public static SpawnBoostListener create(Plugin plugin) {
         var config = plugin.getConfig();
@@ -41,6 +49,17 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             plugin.saveResource("config.yml", true);
             plugin.reloadConfig();
         }
+        
+        // Load enhanced config options with defaults
+        String soundName = config.getString("boostSound", "ENTITY_BAT_TAKEOFF");
+        Sound sound;
+        try {
+            sound = Sound.valueOf(soundName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            plugin.getLogger().warning("Invalid sound: " + soundName + ". Using default sound.");
+            sound = Sound.ENTITY_BAT_TAKEOFF;
+        }
+        
         return new SpawnBoostListener(
                 plugin,
                 config.getInt("multiplyValue"),
@@ -48,16 +67,26 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 config.getBoolean("boostEnabled"),
                 Objects.requireNonNull(Bukkit.getWorld(config.getString("world"))
                         , "Invalid world " + config.getString("world")),
-                config.getString("message"));
+                config.getString("message"),
+                sound,
+                config.getString("boostDirection", "forward"),
+                config.getBoolean("showBoostMessage", true),
+                config.getBoolean("showActivationMessage", true));
     }
 
-    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean boostEnabled, World world, String message) {
+    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean boostEnabled, 
+                              World world, String message, Sound boostSound, String boostDirection,
+                              boolean showBoostMessage, boolean showActivationMessage) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
         this.boostEnabled = boostEnabled;
         this.world = world;
         this.message = message;
+        this.boostSound = boostSound;
+        this.boostDirection = boostDirection.toLowerCase();
+        this.showBoostMessage = showBoostMessage;
+        this.showActivationMessage = showActivationMessage;
 
         this.runTaskTimer(this.plugin, 0, 3);
     }
@@ -91,31 +120,41 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     @EventHandler
     public void onDoubleJump(PlayerToggleFlightEvent event) {
-        if (event.getPlayer().getGameMode() != GameMode.SURVIVAL && event.getPlayer().getGameMode() != GameMode.ADVENTURE) return;
-        if (!isInSpawnRadius(event.getPlayer())) return;
+        Player player = event.getPlayer();
+        
+        // Check permissions
+        if (!player.hasPermission("spawnelytra.use")) {
+            return;
+        }
+        
+        if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+        if (!isInSpawnRadius(player)) return;
         
         // Prevent double-jumping while already flying
-        if (flying.contains(event.getPlayer())) {
+        if (flying.contains(player)) {
             event.setCancelled(true);
             return;
         }
         
         event.setCancelled(true);
-        event.getPlayer().setGliding(true);
-        flying.add(event.getPlayer());
-        if (!boostEnabled) return;
-        String[] messageParts = message.split("%key%");
+        player.setGliding(true);
+        flying.add(player);
         
-        // Create message with keybind component for cross-version compatibility
-        try {
-            BaseComponent[] components = new ComponentBuilder(messageParts[0])
-                    .append(new KeybindComponent("key.swapOffhand"))
-                    .append(messageParts[1])
-                    .create();
-            event.getPlayer().spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
-        } catch (Exception e) {
-            // Fallback for older versions
-            event.getPlayer().sendMessage(message.replace("%key%", "[F]"));
+        // Show activation message if enabled
+        if (showActivationMessage && boostEnabled) {
+            String[] messageParts = message.split("%key%");
+            
+            // Create message with keybind component for cross-version compatibility
+            try {
+                BaseComponent[] components = new ComponentBuilder(messageParts[0])
+                        .append(new KeybindComponent("key.swapOffhand"))
+                        .append(messageParts[1])
+                        .create();
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
+            } catch (Exception e) {
+                // Fallback for older versions
+                player.sendMessage(message.replace("%key%", "[F]"));
+            }
         }
     }
 
@@ -129,10 +168,42 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     @EventHandler
     public void onSwapItem(PlayerSwapHandItemsEvent event) {
-        if (!boostEnabled || !flying.contains(event.getPlayer()) || boosted.contains(event.getPlayer())) return;
+        Player player = event.getPlayer();
+        
+        // Check permissions for boost
+        if (!player.hasPermission("spawnelytra.useboost")) {
+            return;
+        }
+        
+        if (!boostEnabled || !flying.contains(player) || boosted.contains(player)) return;
+        
         event.setCancelled(true);
-        boosted.add(event.getPlayer());
-        event.getPlayer().setVelocity(event.getPlayer().getLocation().getDirection().multiply(multiplyValue));
+        boosted.add(player);
+        
+        // Enhanced boost with direction support
+        Vector velocity;
+        if ("upward".equalsIgnoreCase(boostDirection)) {
+            velocity = new Vector(0, multiplyValue, 0);
+        } else {
+            // Default forward direction
+            velocity = player.getLocation().getDirection().multiply(multiplyValue);
+        }
+        
+        player.setVelocity(velocity);
+        
+        // Play boost sound
+        player.playSound(player.getLocation(), boostSound, 1.0f, 1.0f);
+        
+        // Show boost message if enabled
+        if (showBoostMessage) {
+            try {
+                BaseComponent[] components = new ComponentBuilder("§aBoost activated!")
+                        .create();
+                player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
+            } catch (Exception e) {
+                player.sendMessage("§aBoost activated!");
+            }
+        }
     }
 
     @EventHandler

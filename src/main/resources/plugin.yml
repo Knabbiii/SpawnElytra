@@ -1,8 +1,32 @@
 main: de.knabbiii.spawnelytra.SpawnElytra
-version: 2.0
+version: 2.1
 api-version: 1.21
-author: CoolePizza
+author: Knabbiii
 name: SpawnElytra
-description: "Enable elytra-like flight mechanics at spawn without requiring elytra wings. Double-jump to fly and boost with F key!"
+description: "Enable elytra-like flight mechanics at spawn without requiring elytra wings. Double-jump to fly and boost with F key! Enhanced with features inspired by blax-k's implementation."
 website: https://github.com/Knabbiii/craftattack-spawn-elytra
 softdepend: []
+
+commands:
+  spawnelytra:
+    description: Main SpawnElytra command
+    aliases: [se, selytra]
+    usage: /<command> [reload|info]
+
+permissions:
+  spawnelytra.use:
+    description: Allows players to use elytra flight at spawn
+    default: true
+  spawnelytra.useboost:
+    description: Allows players to use boost functionality
+    default: true
+  spawnelytra.admin:
+    description: Allows access to admin commands like reload
+    default: op
+  spawnelytra.*:
+    description: Gives access to all SpawnElytra permissions
+    default: op
+    children:
+      spawnelytra.use: true
+      spawnelytra.useboost: true
+      spawnelytra.admin: true
