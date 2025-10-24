@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "de.knabbiii.spawnelytra"
-version = "2.0"
+version = "2.1"
 
 repositories {
     mavenCentral()
@@ -16,4 +16,10 @@ dependencies {
 
 java {
     toolchain.languageVersion.set(JavaLanguageVersion.of(21))
+}
+
+// Configure JAR naming
+tasks.jar {
+    archiveBaseName.set("SpawnElytra")
+    archiveVersion.set("2.1")
 }
