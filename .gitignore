@@ -34,3 +34,8 @@ Thumbs.db
 
 # Reference/external code (not part of our project)
 buggynewpluggin/
+
+# Internal development documents (not for public release)
+RELEASE.md
+PUBLISHING_GUIDE.md
+*.md.backup
