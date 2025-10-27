@@ -2,11 +2,11 @@
 
 ![SpawnElytra Banner](.github/assets/spawnelytra-banner.png)
 
-[![Spigot Downloads](https://img.shields.io/spiget/downloads/129704?style=for-the-badge&logo=spigotmc&color=E87B00)](https://www.spigotmc.org/resources/spawnelytra-elytra-flight-at-spawn.129704/)
-[![Modrinth Downloads](https://img.shields.io/modrinth/dt/spawnelytra?logo=modrinth&style=flat&label=Downloads&color=00AF5C)](https://modrinth.com/plugin/spawnelytra)
-[![CodeFactor](https://www.codefactor.io/repository/github/knabbiii/spawnelytra/badge)](https://www.codefactor.io/repository/github/knabbiii/spawnelytra)
-[![License: MIT](https://img.shields.io/github/license/Knabbiii/SpawnElytra?color=0dad6d&label=License&style=flat)](https://opensource.org/licenses/MIT)
-[![GitHub release](https://img.shields.io/github/v/release/knabbiii/spawnelytra?style=flat&label=Release)](https://github.com/Knabbiii/spawnelytra/releases)
+[![Spigot Downloads](https://img.shields.io/spiget/downloads/129704?style=for-the-badge&logo=spigotmc&color=d004f7)](https://www.spigotmc.org/resources/spawnelytra-elytra-flight-at-spawn.129704/)
+[![Modrinth Downloads](https://img.shields.io/modrinth/dt/spawnelytra?logo=modrinth&style=for-the-badge&label=Downloads&color=d004f7)](https://modrinth.com/plugin/spawnelytra)
+[![CodeFactor](https://img.shields.io/codefactor/grade/github/knabbiii/spawnelytra?style=for-the-badge&logo=codefactor&color=d004f7&label=Code%20Quality)](https://www.codefactor.io/repository/github/knabbiii/spawnelytra)
+[![License: MIT](https://img.shields.io/github/license/Knabbiii/SpawnElytra?color=d004f7&label=License&style=for-the-badge&logo=github)](https://opensource.org/licenses/MIT)
+[![GitHub release](https://img.shields.io/github/v/release/knabbiii/spawnelytra?style=for-the-badge&label=Release&color=d004f7&logo=github)](https://github.com/Knabbiii/spawnelytra/releases)
 
 </div>
 
