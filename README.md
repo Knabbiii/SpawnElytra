@@ -97,7 +97,7 @@ showActivationMessage: true      # Show flight activation message
 
 - **Minecraft:** 1.20.1+ (compatible with 1.20.x and 1.21.x)
 - **Server:** Spigot, Paper, or compatible
-- **Java:** 17+
+- **Java:** 21+ (LTS recommended)
 
 ## Credits
 

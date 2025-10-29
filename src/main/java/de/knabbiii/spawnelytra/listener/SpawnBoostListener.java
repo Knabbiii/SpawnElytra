@@ -36,8 +36,6 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final List<Player> flying = new ArrayList<>();
     private final List<Player> boosted = new ArrayList<>();
     private final String message;
-    
-    // Enhanced features inspired by blax-k's implementation
     private final Sound boostSound;
     private final String boostDirection;
     private final boolean showBoostMessage;
@@ -50,7 +48,6 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             plugin.reloadConfig();
         }
         
-        // Load enhanced config options with defaults
         String soundName = config.getString("boostSound", "ENTITY_BAT_TAKEOFF");
         Sound sound;
         try {
@@ -99,14 +96,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             boolean inSpawnRadius = isInSpawnRadius(player);
             boolean isCurrentlyFlying = flying.contains(player);
             
-            // Prevent creative flight while elytra flying
             if (isCurrentlyFlying) {
                 player.setAllowFlight(false);
             } else {
                 player.setAllowFlight(inSpawnRadius);
             }
             
-            // Stop flying when player lands
             if (isCurrentlyFlying && !player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType().isAir()) {
                 player.setAllowFlight(false);
                 player.setGliding(false);
@@ -122,15 +117,9 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     public void onDoubleJump(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
         
-        // Check permissions
-        if (!player.hasPermission("spawnelytra.use")) {
-            return;
-        }
-        
         if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
         if (!isInSpawnRadius(player)) return;
         
-        // Prevent double-jumping while already flying
         if (flying.contains(player)) {
             event.setCancelled(true);
             return;
@@ -140,19 +129,16 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         player.setGliding(true);
         flying.add(player);
         
-        // Show activation message if enabled
         if (showActivationMessage && boostEnabled) {
             String[] messageParts = message.split("%key%");
             
-            // Create message with keybind component for cross-version compatibility
             try {
                 BaseComponent[] components = new ComponentBuilder(messageParts[0])
                         .append(new KeybindComponent("key.swapOffhand"))
                         .append(messageParts[1])
                         .create();
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
-            } catch (Exception e) {
-                // Fallback for older versions
+            } catch (NoClassDefFoundError | NoSuchMethodError e) {
                 player.sendMessage(message.replace("%key%", "[F]"));
             }
         }
@@ -163,14 +149,15 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         if (event.getEntityType() == EntityType.PLAYER
                 && (event.getCause() == EntityDamageEvent.DamageCause.FALL
                 || event.getCause() == EntityDamageEvent.DamageCause.FLY_INTO_WALL)
-                && flying.contains(event.getEntity())) event.setCancelled(true);
+                && flying.contains(event.getEntity())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onSwapItem(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
         
-        // Check permissions for boost
         if (!player.hasPermission("spawnelytra.useboost")) {
             return;
         }
@@ -180,27 +167,23 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         event.setCancelled(true);
         boosted.add(player);
         
-        // Enhanced boost with direction support
         Vector velocity;
         if ("upward".equalsIgnoreCase(boostDirection)) {
             velocity = new Vector(0, multiplyValue, 0);
         } else {
-            // Default forward direction
             velocity = player.getLocation().getDirection().multiply(multiplyValue);
         }
         
         player.setVelocity(velocity);
         
-        // Play boost sound
         player.playSound(player.getLocation(), boostSound, 1.0f, 1.0f);
         
-        // Show boost message if enabled
         if (showBoostMessage) {
             try {
                 BaseComponent[] components = new ComponentBuilder("§aBoost activated!")
                         .create();
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
-            } catch (Exception e) {
+            } catch (NoClassDefFoundError | NoSuchMethodError e) {
                 player.sendMessage("§aBoost activated!");
             }
         }
@@ -208,13 +191,14 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     @EventHandler
     public void onToggleGlide(EntityToggleGlideEvent event) {
-        if (event.getEntityType() == EntityType.PLAYER && flying.contains(event.getEntity())) event.setCancelled(true);
+        if (event.getEntityType() == EntityType.PLAYER && flying.contains(event.getEntity())) {
+            event.setCancelled(true);
+        }
     }
 
     @EventHandler
     public void onWorldChange(PlayerChangedWorldEvent event) {
         Player player = event.getPlayer();
-        // Stop flying when changing worlds
         if (flying.contains(player)) {
             player.setAllowFlight(false);
             player.setGliding(false);

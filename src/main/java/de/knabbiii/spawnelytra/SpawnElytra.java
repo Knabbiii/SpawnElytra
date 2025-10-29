@@ -8,40 +8,41 @@ import java.util.Objects;
 
 public class SpawnElytra extends JavaPlugin {
     
+    private static SpawnElytra instance;
     private SpawnBoostListener listener;
+
+    public static SpawnElytra getInstance() {
+        return instance;
+    }
 
     @Override
     public void onEnable() {
-        // Save default config if it doesn't exist
+        instance = this;
         saveDefaultConfig();
         
-        // Create and register the listener
         this.listener = SpawnBoostListener.create(this);
         getServer().getPluginManager().registerEvents(listener, this);
         
-        // Register commands
-        SpawnElytraCommand commandHandler = new SpawnElytraCommand(this);
+        SpawnElytraCommand commandHandler = new SpawnElytraCommand();
         Objects.requireNonNull(getCommand("spawnelytra")).setExecutor(commandHandler);
         Objects.requireNonNull(getCommand("spawnelytra")).setTabCompleter(commandHandler);
         
-        getLogger().info("SpawnElytra has been enabled! Enhanced with features inspired by blax-k's implementation.");
+        getLogger().info("SpawnElytra v2.2 enabled! Modern Java 21 implementation with enhanced features.");
     }
 
     @Override
     public void onDisable() {
-        // Cancel the scheduler task
         if (listener != null) {
             listener.cancel();
         }
-        
-        getLogger().info("SpawnElytra has been disabled!");
+        instance = null;
+        getLogger().info("SpawnElytra v2.2 disabled!");
     }
     
     @Override
     public void reloadConfig() {
         super.reloadConfig();
         
-        // Restart the listener with new config
         if (listener != null) {
             listener.cancel();
         }
