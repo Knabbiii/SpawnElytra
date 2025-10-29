@@ -3,7 +3,7 @@ plugins {
 }
 
 group = "de.knabbiii.spawnelytra"
-version = "2.1"
+version = "2.2"
 
 repositories {
     mavenCentral()
@@ -16,12 +16,12 @@ dependencies {
 }
 
 java {
-    // Use Java 17 for better compatibility with 1.20.x servers
-    toolchain.languageVersion.set(JavaLanguageVersion.of(17))
+    // Use Java 21 LTS for optimal performance and security
+    toolchain.languageVersion.set(JavaLanguageVersion.of(21))
 }
 
 // Configure JAR naming
 tasks.jar {
     archiveBaseName.set("SpawnElytra")
-    archiveVersion.set("2.1")
+    archiveVersion.set("2.2")
 }

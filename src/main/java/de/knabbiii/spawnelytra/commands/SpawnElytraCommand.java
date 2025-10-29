@@ -14,10 +14,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class SpawnElytraCommand implements CommandExecutor, TabCompleter {
-    private final SpawnElytra plugin;
-
-    public SpawnElytraCommand(SpawnElytra plugin) {
-        this.plugin = plugin;
+    
+    private SpawnElytra getPlugin() {
+        return SpawnElytra.getInstance();
     }
 
     @Override
@@ -33,7 +32,7 @@ public class SpawnElytraCommand implements CommandExecutor, TabCompleter {
                     sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
                     return true;
                 }
-                plugin.reloadConfig();
+                getPlugin().reloadConfig();
                 sender.sendMessage(ChatColor.GREEN + "SpawnElytra configuration reloaded successfully!");
                 return true;
 
@@ -48,29 +47,47 @@ public class SpawnElytraCommand implements CommandExecutor, TabCompleter {
     }
 
     private void sendHelpMessage(CommandSender sender) {
-        sender.sendMessage(ChatColor.GOLD + "=== SpawnElytra Commands ===");
-        sender.sendMessage(ChatColor.YELLOW + "/spawnelytra info " + ChatColor.WHITE + "- Show plugin information");
+        List<String> messages = new ArrayList<>();
+        messages.add("%s=== SpawnElytra Commands ===".formatted(ChatColor.GOLD));
+        messages.add("%s/spawnelytra info %s- Show plugin information".formatted(ChatColor.YELLOW, ChatColor.WHITE));
         
         if (sender.hasPermission("spawnelytra.admin")) {
-            sender.sendMessage(ChatColor.YELLOW + "/spawnelytra reload " + ChatColor.WHITE + "- Reload plugin configuration");
+            messages.add("%s/spawnelytra reload %s- Reload plugin configuration".formatted(ChatColor.YELLOW, ChatColor.WHITE));
         }
         
-        sender.sendMessage(ChatColor.GRAY + "Plugin by Knabbiii - Enhanced with ideas from blax-k");
+        messages.add("%sPlugin by Knabbiii - Enhanced with ideas from blax-k".formatted(ChatColor.GRAY));
+        sender.sendMessage(messages.toArray(new String[0]));
     }
 
     private void sendInfoMessage(CommandSender sender) {
-        sender.sendMessage(ChatColor.GOLD + "=== SpawnElytra Info ===");
-        sender.sendMessage(ChatColor.YELLOW + "Version: " + ChatColor.WHITE + plugin.getDescription().getVersion());
-        sender.sendMessage(ChatColor.YELLOW + "Author: " + ChatColor.WHITE + plugin.getDescription().getAuthors().get(0));
-        sender.sendMessage(ChatColor.YELLOW + "Website: " + ChatColor.WHITE + plugin.getDescription().getWebsite());
-        sender.sendMessage("");
-        sender.sendMessage(ChatColor.YELLOW + "World: " + ChatColor.WHITE + plugin.getConfig().getString("world"));
-        sender.sendMessage(ChatColor.YELLOW + "Spawn Radius: " + ChatColor.WHITE + plugin.getConfig().getInt("spawnRadius"));
-        sender.sendMessage(ChatColor.YELLOW + "Boost Multiplier: " + ChatColor.WHITE + plugin.getConfig().getInt("multiplyValue"));
-        sender.sendMessage(ChatColor.YELLOW + "Boost Enabled: " + ChatColor.WHITE + plugin.getConfig().getBoolean("boostEnabled"));
-        sender.sendMessage(ChatColor.YELLOW + "Boost Sound: " + ChatColor.WHITE + plugin.getConfig().getString("boostSound"));
-        sender.sendMessage("");
-        sender.sendMessage(ChatColor.GRAY + "Enhanced with features inspired by blax-k's implementation");
+        SpawnElytra plugin = getPlugin();
+        String infoBlock = """
+                %s=== SpawnElytra Info ===
+                %sVersion: %s%s
+                %sAuthor: %s%s
+                %sWebsite: %s%s
+                
+                %sWorld: %s%s
+                %sSpawn Radius: %s%d
+                %sBoost Multiplier: %s%d
+                %sBoost Enabled: %s%s
+                %sBoost Sound: %s%s
+                
+                %sEnhanced with features inspired by blax-k's implementation
+                """.formatted(
+                ChatColor.GOLD,
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getDescription().getVersion(),
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getDescription().getAuthors().get(0),
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getDescription().getWebsite(),
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getConfig().getString("world"),
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getConfig().getInt("spawnRadius"),
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getConfig().getInt("multiplyValue"),
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getConfig().getBoolean("boostEnabled"),
+                ChatColor.YELLOW, ChatColor.WHITE, plugin.getConfig().getString("boostSound"),
+                ChatColor.GRAY
+        );
+        
+        sender.sendMessage(infoBlock.trim().split("\n"));
     }
 
     @Override
