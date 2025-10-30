@@ -30,7 +30,7 @@ A Minecraft plugin that enables elytra-like flight mechanics at spawn without re
 
 ## Installation
 
-1. Download the latest `.jar` file from the [releases page](https://github.com/Knabbiii/craftattack-spawn-elytra/releases)
+1. Download the latest `.jar` file from the [releases page](https://github.com/Knabbiii/SpawnElytra/releases)
 2. Place it in your server's `plugins` folder
 3. Restart your server
 4. Configure the plugin in `plugins/SpawnElytra/config.yml`
