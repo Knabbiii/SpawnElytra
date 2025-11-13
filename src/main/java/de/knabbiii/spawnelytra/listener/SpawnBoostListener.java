@@ -35,6 +35,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final World world;
     private final List<Player> flying = new ArrayList<>();
     private final List<Player> boosted = new ArrayList<>();
+    private final List<Player> gracePeriod = new ArrayList<>();
     private final String message;
     private final Sound boostSound;
     private final String boostDirection;
@@ -43,11 +44,11 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     public static SpawnBoostListener create(Plugin plugin) {
         var config = plugin.getConfig();
-        if (!config.contains("multiplyValue") || !config.contains("spawnRadius") || !config.contains("boostEnabled") || !config.contains("world") ||  !config.contains("message")) {
+        if (!config.contains("multiplyValue") || !config.contains("spawnRadius") || !config.contains("boostEnabled") || !config.contains("world") || !config.contains("message")) {
             plugin.saveResource("config.yml", true);
             plugin.reloadConfig();
         }
-        
+
         String soundName = config.getString("boostSound", "ENTITY_BAT_TAKEOFF");
         Sound sound;
         try {
@@ -56,7 +57,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             plugin.getLogger().warning("Invalid sound: " + soundName + ". Using default sound.");
             sound = Sound.ENTITY_BAT_TAKEOFF;
         }
-        
+
         return new SpawnBoostListener(
                 plugin,
                 config.getInt("multiplyValue"),
@@ -71,9 +72,9 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 config.getBoolean("showActivationMessage", true));
     }
 
-    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean boostEnabled, 
-                              World world, String message, Sound boostSound, String boostDirection,
-                              boolean showBoostMessage, boolean showActivationMessage) {
+    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean boostEnabled,
+                               World world, String message, Sound boostSound, String boostDirection,
+                               boolean showBoostMessage, boolean showActivationMessage) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
@@ -85,30 +86,22 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         this.showBoostMessage = showBoostMessage;
         this.showActivationMessage = showActivationMessage;
 
-        this.runTaskTimer(this.plugin, 0, 3);
+        this.runTaskTimer(this.plugin, 0, 5);
     }
 
     @Override
     public void run() {
+        //Detect Players near Spawn and allow them to toggle flight
         Bukkit.getOnlinePlayers().forEach(player -> {
             if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
-            
+
             boolean inSpawnRadius = isInSpawnRadius(player);
             boolean isCurrentlyFlying = flying.contains(player);
-            
+
             if (isCurrentlyFlying) {
                 player.setAllowFlight(false);
             } else {
                 player.setAllowFlight(inSpawnRadius);
-            }
-            
-            if (isCurrentlyFlying && !player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType().isAir()) {
-                player.setAllowFlight(false);
-                player.setGliding(false);
-                boosted.remove(player);
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    flying.remove(player);
-                }, 5);
             }
         });
     }
@@ -116,22 +109,30 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     @EventHandler
     public void onDoubleJump(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
-        
+
         if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
         if (!isInSpawnRadius(player)) return;
-        
+
         if (flying.contains(player)) {
             event.setCancelled(true);
             return;
         }
-        
+
         event.setCancelled(true);
         player.setGliding(true);
+        player.setAllowFlight(false);
         flying.add(player);
-        
+        gracePeriod.add(player);
+
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            //Player can be detected as not flying when removed
+            gracePeriod.remove(player);
+        }, 5);
+
+
         if (showActivationMessage && boostEnabled) {
             String[] messageParts = message.split("%key%");
-            
+
             try {
                 BaseComponent[] components = new ComponentBuilder(messageParts[0])
                         .append(new KeybindComponent("key.swapOffhand"))
@@ -157,27 +158,27 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     @EventHandler
     public void onSwapItem(PlayerSwapHandItemsEvent event) {
         Player player = event.getPlayer();
-        
+
         if (!player.hasPermission("spawnelytra.useboost")) {
             return;
         }
-        
+
         if (!boostEnabled || !flying.contains(player) || boosted.contains(player)) return;
-        
+
         event.setCancelled(true);
         boosted.add(player);
-        
+
         Vector velocity;
         if ("upward".equalsIgnoreCase(boostDirection)) {
             velocity = new Vector(0, multiplyValue, 0);
         } else {
             velocity = player.getLocation().getDirection().multiply(multiplyValue);
         }
-        
+
         player.setVelocity(velocity);
-        
+
         player.playSound(player.getLocation(), boostSound, 1.0f, 1.0f);
-        
+
         if (showBoostMessage) {
             try {
                 BaseComponent[] components = new ComponentBuilder("§aBoost activated!")
@@ -191,8 +192,21 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     @EventHandler
     public void onToggleGlide(EntityToggleGlideEvent event) {
-        if (event.getEntityType() == EntityType.PLAYER && flying.contains(event.getEntity())) {
+        if (event.getEntityType() != EntityType.PLAYER) return;
+        Player player = (Player) event.getEntity();
+        if (flying.contains(player)) {
             event.setCancelled(true);
+
+            //Detect Landing and remove elytra
+            if (!gracePeriod.contains(player) && !player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType().isAir()) {
+                player.setAllowFlight(false);
+                player.setGliding(false);
+                boosted.remove(player);
+
+                Bukkit.getScheduler().runTaskLater(plugin, () -> {
+                    flying.remove(player);
+                }, 5L);
+            }
         }
     }
 
@@ -206,6 +220,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             boosted.remove(player);
         }
     }
+
 
     private boolean isInSpawnRadius(Player player) {
         if (!player.getWorld().equals(world)) return false;
