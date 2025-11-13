@@ -23,5 +23,5 @@ java {
 // Configure JAR naming
 tasks.jar {
     archiveBaseName.set("SpawnElytra")
-    archiveVersion.set("2.2")
+    archiveVersion.set(version.toString())
 }

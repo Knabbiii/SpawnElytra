@@ -27,7 +27,7 @@ public class SpawnElytra extends JavaPlugin {
         Objects.requireNonNull(getCommand("spawnelytra")).setExecutor(commandHandler);
         Objects.requireNonNull(getCommand("spawnelytra")).setTabCompleter(commandHandler);
         
-        getLogger().info("SpawnElytra v2.2 enabled! Modern Java 21 implementation with enhanced features.");
+        getLogger().info("SpawnElytra v" + getDescription().getVersion() + " enabled!");
     }
 
     @Override
@@ -36,7 +36,7 @@ public class SpawnElytra extends JavaPlugin {
             listener.cancel();
         }
         instance = null;
-        getLogger().info("SpawnElytra v2.2 disabled!");
+        getLogger().info("SpawnElytra v" + getDescription().getVersion() + " disabled!");
     }
     
     @Override
