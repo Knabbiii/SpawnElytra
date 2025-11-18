@@ -41,17 +41,16 @@ A Minecraft plugin that enables elytra-like flight mechanics at spawn without re
 The plugin uses the **world spawn point** as the center for flight activation. This is the exact location where players spawn when they first join the server or use the `/spawn` command. You can set this location using the `/setworldspawn` command.
 
 ```yaml
-spawnRadius: 50           # Radius around spawn where players can start flying
-multiplyValue: 5          # Velocity multiplier for the boost (F key)
-boostEnabled: true        # Whether the boost feature is enabled
-world: "world"           # The world where the feature works
-message: "Press %key% to boost yourself."  # Action bar message (%key% = F key)
-
-# Enhanced features
-boostSound: ENTITY_BAT_TAKEOFF    # Sound played when boosting
+world: world                      # The world where the feature works
+spawnRadius: 50                   # Radius around spawn where players can start flying
+boostEnabled: true                # Whether the boost feature is enabled
+multiplyValue: 5                  # Velocity multiplier for the boost
 boostDirection: forward           # Direction of boost: 'forward' or 'upward'
-showBoostMessage: true           # Show boost activation message
-showActivationMessage: true      # Show flight activation message
+boostSound: ENTITY_BAT_TAKEOFF    # Sound played when boosting
+message: "Press %key% to boost yourself."  # Action bar message (%key% = F/Sneak)
+showBoostMessage: true            # Show boost activation message
+showActivationMessage: true       # Show flight activation message
+enableMetrics: true               # Send anonymous usage statistics to bStats
 ```
 
 ### Configuration Options
