@@ -19,14 +19,15 @@ A Minecraft plugin that enables elytra-like flight mechanics at spawn without re
 ## Features
 
 - **Double-jump to fly** - Activate elytra gliding anywhere within the spawn radius
-- **Enhanced boost mechanics** - Press F (swap hands) to get a speed boost while flying
+- **Enhanced boost mechanics** - Press F (Java) or Sneak (Bedrock) to get a speed boost while flying
+- **Bedrock/Geyser compatible** - Full support for Bedrock Edition players via GeyserMC
 - **World-specific** - Configure which world the feature works in
 - **No fall damage** - Players won't take damage while using the elytra
 - **Lightweight** - Minimal performance impact with efficient event handling
 - **Sound effects** - Configurable boost sounds for better feedback
 - **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
 - **Permission system** - Fine-grained control over who can use what features
-- **Better messages** - Enhanced action bar messages with keybind support
+- **Anonymous metrics** - Optional bStats integration (can be disabled in config)
 
 ## Installation
 
@@ -66,6 +67,7 @@ showActivationMessage: true      # Show flight activation message
 | `boostDirection` | Direction of boost: `forward` or `upward` | `forward` |
 | `showBoostMessage` | Show "Boost activated!" message | `true` |
 | `showActivationMessage` | Show activation message with F key hint | `true` |
+| `enableMetrics` | Send anonymous usage statistics to bStats | `true` |
 
 ## How to Use
 
