@@ -1,11 +1,11 @@
 main: de.knabbiii.spawnelytra.SpawnElytra
-version: 2.2
+version: 2.3.0
 api-version: 1.20
 author: Knabbiii
 name: SpawnElytra
-description: "Enable elytra-like flight mechanics at spawn without requiring elytra wings. Double-jump to fly and boost with F key! Built with Java 21 for optimal performance."
+description: "Enable elytra-like flight mechanics at spawn without requiring elytra wings. Double-jump to fly and boost with F key (Java) or Sneak (Bedrock)! Built with Java 21 for optimal performance. Geyser/Bedrock compatible! Paper servers: automatic advancement suppression for Bedrock players."
 website: https://github.com/Knabbiii/SpawnElytra
-softdepend: []
+softdepend: [floodgate]
 
 commands:
   spawnelytra:
