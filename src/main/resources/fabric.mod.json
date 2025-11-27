@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "spawnelytra",
+  "version": "${version}",
+  "name": "Spawn Elytra",
+  "description": "A Fabric mod that gives players temporary elytras at spawn with boosting capabilities. Inspired by Craft Attack's spawn elytra system.",
+  "authors": [],
+  "contact": {},
+  "license": "MIT",
+  "icon": "icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "fabric-datagen": [
+      "dev.kkazi.spawnelytra.client.SpawnelytraDataGenerator"
+    ],
+    "main": [
+      "dev.kkazi.spawnelytra.SpawnElytraMod"
+    ]
+  },
+  "mixins": [
+    "spawnelytra.mixins.json",
+    {
+      "config": "spawnelytra.client.mixins.json",
+      "environment": "client"
+    }
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  }
+}
