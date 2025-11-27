@@ -3,13 +3,10 @@ package dev.kkazi.spawnelytra.mixin;
 import dev.kkazi.spawnelytra.SpawnElytraListener;
 import dev.kkazi.spawnelytra.SpawnElytraMod;
 import dev.kkazi.spawnelytra.config.ModConfig;
-import me.shedaniel.autoconfig.AutoConfig;
 import net.minecraft.network.protocol.game.ServerboundPlayerAbilitiesPacket;
-import net.minecraft.network.protocol.game.ServerboundUseItemPacket;
+import net.minecraft.network.protocol.game.ServerboundPlayerActionPacket;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.network.ServerGamePacketListenerImpl;
-import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.Items;
 import net.minecraft.world.level.GameType;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -17,9 +14,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.UUID;
+
 @Mixin(ServerGamePacketListenerImpl.class)
 public class ServerGamePacketListenerMixin {
-    private static ModConfig config = SpawnElytraMod.getConfig();
+    private static final ModConfig config = SpawnElytraMod.getConfig();
 
     @Shadow public ServerPlayer player;
 
@@ -34,13 +33,17 @@ public class ServerGamePacketListenerMixin {
             }
         }
     }
-
-    @Inject(method = "handleUseItem", at = @At("HEAD"), cancellable = true)
-    private void disableFireworks(ServerboundUseItemPacket packet, CallbackInfo ci) {
-        if (!config.fireworksEnabled) {
-            ItemStack item = player.getItemInHand(packet.getHand());
-            if (SpawnElytraListener.getInstance().getFlying().contains(player.getUUID()) && item.is(Items.FIREWORK_ROCKET))
+    
+    @Inject(method = "handlePlayerAction", at = @At("HEAD"), cancellable = true)
+    private void onSwapHands(ServerboundPlayerActionPacket packet, CallbackInfo ci) {
+        if (packet.getAction() == ServerboundPlayerActionPacket.Action.SWAP_ITEM_WITH_OFFHAND) {
+            SpawnElytraListener listener = SpawnElytraListener.getInstance();
+            UUID playerUUID = player.getUUID();
+            
+            if (config.boostEnabled && listener.getFlying().contains(playerUUID) && !listener.getBoosted().contains(playerUUID)) {
                 ci.cancel();
+                listener.triggerBoost(player);
+            }
         }
     }
 

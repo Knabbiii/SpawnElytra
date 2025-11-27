@@ -2,7 +2,6 @@
 
 ![SpawnElytra Banner](.github/assets/spawnelytra-banner.png)
 
-[![Spigot Downloads](https://img.shields.io/spiget/downloads/129704?style=for-the-badge&logo=spigotmc&color=d004f7)](https://www.spigotmc.org/resources/spawnelytra-elytra-flight-at-spawn.129704/)
 [![Modrinth Downloads](https://img.shields.io/modrinth/dt/spawnelytra?logo=modrinth&style=for-the-badge&label=Downloads&color=d004f7)](https://modrinth.com/plugin/spawnelytra)
 [![CodeFactor](https://img.shields.io/codefactor/grade/github/knabbiii/spawnelytra?style=for-the-badge&logo=codefactor&color=d004f7&label=Code%20Quality)](https://www.codefactor.io/repository/github/knabbiii/spawnelytra)
 [![License: MIT](https://img.shields.io/github/license/Knabbiii/SpawnElytra?color=d004f7&label=License&style=for-the-badge&logo=github)](https://opensource.org/licenses/MIT)
@@ -12,68 +11,67 @@
 
 > **You might know this feature from CraftAttack - this is exactly the same, but better!**
 
-A Minecraft plugin that enables elytra-like flight mechanics at spawn without requiring actual elytra wings. Double-jump to soar through the air and boost yourself with the F key!
+A Minecraft mod/plugin that enables elytra-like flight mechanics at spawn without requiring actual elytra wings. Double-jump to soar through the air and boost yourself with the F key!
 
-**Enhanced with features inspired by [blax-k's SpawnElytra implementation](https://github.com/blax-k/SpawnElytra)**
+**Available for both Fabric and Paper/Bukkit (1.20.1+)**
 
 ## Features
 
 - **Double-jump to fly** - Activate elytra gliding anywhere within the spawn radius
-- **Enhanced boost mechanics** - Press F (Java) or Sneak (Bedrock) to get a speed boost while flying
-- **Bedrock/Geyser compatible** - Full support for Bedrock Edition players via GeyserMC
-- **World-specific** - Configure which world the feature works in
-- **No fall damage** - Players won't take damage while using the elytra
+- **Enhanced boost mechanics** - Press F to get a speed boost while flying (once per flight)
+- **World-specific** - Works in the configured world's spawn area
+- **No fall damage** - Players won't take damage while using the spawn elytra
 - **Lightweight** - Minimal performance impact with efficient event handling
 - **Sound effects** - Configurable boost sounds for better feedback
 - **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
-- **Permission system** - Fine-grained control over who can use what features
-- **Anonymous metrics** - Optional bStats integration (can be disabled in config)
+- **Permission system** - Fine-grained control with LuckPerms support (optional)
+- **Update checker** - Automatic notification for new versions via Modrinth API
 
 ## Installation
 
-1. Download the latest `.jar` file from the [releases page](https://github.com/Knabbiii/SpawnElytra/releases)
-2. Place it in your server's `plugins` folder
-3. Restart your server
-4. Configure the plugin in `plugins/SpawnElytra/config.yml`
+### Fabric
+1. Make sure you have a Fabric server with [Fabric API](https://modrinth.com/mod/fabric-api) installed
+2. Download [Cloth Config](https://modrinth.com/mod/cloth-config) and place it in your `mods` folder
+3. Download SpawnElytra Fabric from [Releases](https://github.com/Knabbiii/SpawnElytra/releases) or [Modrinth](https://modrinth.com/plugin/spawnelytra)
+4. Place the `.jar` in your `mods` folder
+5. Start your server
+6. Configure in `config/spawnelytra.toml`
 
 ## Configuration
 
-The plugin uses the **world spawn point** as the center for flight activation. This is the exact location where players spawn when they first join the server or use the `/spawn` command. You can set this location using the `/setworldspawn` command.
-
-```yaml
-world: world                      # The world where the feature works
-spawnRadius: 50                   # Radius around spawn where players can start flying
-boostEnabled: true                # Whether the boost feature is enabled
-multiplyValue: 5                  # Velocity multiplier for the boost
-boostDirection: forward           # Direction of boost: 'forward' or 'upward'
-boostSound: ENTITY_BAT_TAKEOFF    # Sound played when boosting
-message: "Press %key% to boost yourself."  # Action bar message (%key% = F/Sneak)
-showBoostMessage: true            # Show boost activation message
-showActivationMessage: true       # Show flight activation message
-enableMetrics: true               # Send anonymous usage statistics to bStats
+### Fabric (config/spawnelytra.toml)
+```toml
+spawnRadius = 50                  # Radius around spawn where players can start flying
+boostEnabled = true               # Whether the boost feature is enabled
+boostStrength = 5                 # Velocity multiplier for the boost
+boostDirection = "forward"        # Direction of boost: 'forward' or 'upward'
+boostSound = "entity.bat.takeoff" # Sound played when boosting
+message = "Press %key% to boost yourself."  # Action bar message
+showBoostMessage = true           # Show boost activation message
+showActivationMessage = true      # Show flight activation message
+checkForUpdates = true            # Check for updates on startup
 ```
 
-### Configuration Options
-
-| Option | Description | Default |
-|--------|-------------|---------|
-| `spawnRadius` | Radius around spawn where players can start flying | `50` |
-| `multiplyValue` | How much the velocity gets multiplied when boosting | `5` |
-| `boostEnabled` | Whether the boost feature is enabled | `true` |
-| `world` | The world where the feature works | `"world"` |
-| `message` | Action bar message shown to players (`%key%` = F key) | English message |
-| `boostSound` | Sound played when using boost | `ENTITY_BAT_TAKEOFF` |
-| `boostDirection` | Direction of boost: `forward` or `upward` | `forward` |
-| `showBoostMessage` | Show "Boost activated!" message | `true` |
-| `showActivationMessage` | Show activation message with F key hint | `true` |
-| `enableMetrics` | Send anonymous usage statistics to bStats | `true` |
+### Paper/Bukkit (plugins/SpawnElytra/config.yml)
+```yaml
+world: world                      # The world where the feature works
+spawnRadius: 50                   # Radius around spawn
+boostEnabled: true                # Whether boost is enabled
+multiplyValue: 5                  # Velocity multiplier
+boostDirection: forward           # 'forward' or 'upward'
+boostSound: ENTITY_BAT_TAKEOFF    # Boost sound
+message: "Press %key% to boost yourself."
+showBoostMessage: true
+showActivationMessage: true
+checkForUpdates: true             # Update checker
+```
 
 ## How to Use
 
 1. **Enter the spawn area** (within the configured radius)
 2. **Double-jump** (press space twice quickly) to start flying
 3. **Use elytra controls** to glide around
-4. **Press F** (swap hands) to boost forward while flying
+4. **Press F** (swap hands) to boost yourself while flying
 5. **Land** to stop flying
 
 ## Commands
@@ -94,32 +92,28 @@ enableMetrics: true               # Send anonymous usage statistics to bStats
 | `spawnelytra.admin` | Allows access to admin commands | `op` |
 | `spawnelytra.*` | Grants all permissions | `op` |
 
+**Note:** LuckPerms integration is optional for Fabric. Without LuckPerms, all players have all permissions by default.
+
 ## Requirements
 
-- **Minecraft:** 1.20.1+ (compatible with 1.20.x and 1.21.x)
-- **Server:** Spigot, Paper, or compatible
-- **Java:** 21+ (LTS recommended)
+### Fabric
+- **Minecraft:** 1.20.1 - 1.21.10
+- **Fabric Loader:** 0.15.0+
+- **Fabric API:** Compatible version for your Minecraft version
+- **Cloth Config:** 11.0.0+
+- **Java:** 21+
 
 ## Credits
+
+**Fabric Port:** [@SchlangeGoto](https://github.com/SchlangeGoto) - Initial Fabric implementation
 
 **Original Concept:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/) - [Original SpawnElytra](https://www.spigotmc.org/resources/spawnelytra.97565/)
 
 **Enhanced Features Inspired By:** [blax-k](https://github.com/blax-k) - [SpawnElytra Implementation](https://github.com/blax-k/SpawnElytra)
-- Command system and admin features
-- Sound effects and enhanced boost mechanics  
-- Better configuration options
-- Permission system improvements
-
-**This Version:** Updated, enhanced, and optimized implementation with bug fixes for modern Minecraft versions, combining the best ideas from both original works.
 
 ## License
 
 This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-**Original Developer:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/)  
-**Original Plugin:** [SpawnElytra on SpigotMC](https://www.spigotmc.org/resources/spawnelytra.97565/)
-
-This is an updated and improved version of the original plugin with bug fixes and enhanced compatibility for modern Minecraft versions.
 
 ---
 
