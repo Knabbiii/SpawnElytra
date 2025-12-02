@@ -102,7 +102,8 @@ enableMetrics: true               # Send anonymous usage statistics to bStats
 
 ## Credits
 
-**Original Concept:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/) - [Original SpawnElytra](https://www.spigotmc.org/resources/spawnelytra.97565/)
+**Original Concept:** [CoolePizza](https://www.spigotmc.org/resources/authors/coolepizza.901913/) - [Original SpawnElytra](https://www.spigotmc.org/resources/spawnelytra.97565/)   
+**Fabric Port:** [@SchlangeGoto](https://github.com/SchlangeGoto) - Initial Fabric implementation
 
 **Enhanced Features Inspired By:** [blax-k](https://github.com/blax-k) - [SpawnElytra Implementation](https://github.com/blax-k/SpawnElytra)
 - Command system and admin features
