@@ -71,6 +71,11 @@ showBoostMessage: true
 # When true: Shows the message above when player starts flying
 showActivationMessage: true
 
+# Enable bStats metrics collection
+# When true: Collects anonymous usage statistics to help improve the plugin
+# When false: No data is sent to bStats
+enableMetrics: true
+
 # Permission Settings
 # ===================
 # Permissions are defined in plugin.yml but referenced here for clarity:
