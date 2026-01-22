@@ -3,6 +3,7 @@ build/
 .gradle/
 gradle-app.setting
 !gradle-wrapper.jar
+out/
 
 # IDE files
 .idea/
@@ -11,6 +12,7 @@ gradle-app.setting
 .vscode/settings.json
 .vscode/launch.json
 .vscode/tasks.json
+*.code-workspace
 
 # OS generated files
 .DS_Store
@@ -26,16 +28,17 @@ Thumbs.db
 *.bak
 *.swp
 *~.nib
+*.log
 
 # Java
 *.class
 *.jar
 !gradle-wrapper.jar
 
-# Reference/external code (not part of our project)
+# Reference/external code
 buggynewpluggin/
 
-# Internal development documents (not for public release)
+# Internal development documents
 RELEASE.md
 PUBLISHING_GUIDE.md
 *.md.backup
