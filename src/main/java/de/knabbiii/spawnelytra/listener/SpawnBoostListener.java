@@ -8,7 +8,7 @@ import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Sound;
 import org.bukkit.World;
-import org.bukkit.block.BlockFace;
+import org.bukkit.block.Block;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -195,10 +195,14 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         if (event.getEntityType() != EntityType.PLAYER) return;
         Player player = (Player) event.getEntity();
         if (flying.contains(player)) {
-            event.setCancelled(true);
+            // Only cancel if the player is trying to STOP gliding
+            // This prevents Bedrock clients (via GeyserMC) from stopping flight prematurely
+            if (!event.isGliding()) {
+                event.setCancelled(true);
+            }
 
-            //Detect Landing and remove elytra
-            if (!gracePeriod.contains(player) && !player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType().isAir()) {
+            //Detect Landing and remove elytra - only check when player tries to stop gliding
+            if (!event.isGliding() && !gracePeriod.contains(player) && isPlayerOnGround(player)) {
                 player.setAllowFlight(false);
                 player.setGliding(false);
                 boosted.remove(player);
@@ -225,5 +229,11 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private boolean isInSpawnRadius(Player player) {
         if (!player.getWorld().equals(world)) return false;
         return player.getWorld().getSpawnLocation().distance(player.getLocation()) <= spawnRadius;
+    }
+
+    private boolean isPlayerOnGround(Player player) {
+        // Check if there's a solid block below the player
+        Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
+        return !blockBelow.getType().isAir() && blockBelow.getType().isSolid();
     }
 }
