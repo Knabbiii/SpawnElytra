@@ -252,31 +252,14 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         if (event.getEntityType() != EntityType.PLAYER) return;
         Player player = (Player) event.getEntity();
         if (flying.contains(player)) {
-<<<<<<< HEAD
-            // Only cancel if the player is trying to STOP gliding
-            // This prevents Bedrock clients (via GeyserMC) from stopping flight prematurely
-            if (!event.isGliding()) {
-                event.setCancelled(true);
-            }
-
-            //Detect Landing and remove elytra - only check when player tries to stop gliding
-            if (!event.isGliding() && !gracePeriod.contains(player) && isPlayerOnGround(player)) {
-                player.setAllowFlight(false);
-                player.setGliding(false);
-                boosted.remove(player);
-
-                Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    flying.remove(player);
-                }, 5L);
-=======
             boolean isBedrock = isBedrockPlayer(player);
             
             if (!event.isGliding() && isBedrock) {
-                if (!gracePeriod.contains(player) && !player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType().isAir()) {
+                if (!gracePeriod.contains(player) && isPlayerOnGround(player)) {
                     player.setAllowFlight(false);
                     player.setGliding(false);
                     boosted.remove(player);
-                    if (isBedrock && originalChestplates.containsKey(player)) {
+                    if (originalChestplates.containsKey(player)) {
                         player.getInventory().setChestplate(originalChestplates.remove(player));
                     }
                     Bukkit.getScheduler().runTaskLater(plugin, () -> flying.remove(player), 5L);
@@ -285,7 +268,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 }
             } else if (!isBedrock) {
                 event.setCancelled(true);
-                if (!gracePeriod.contains(player) && !player.getLocation().getBlock().getRelative(BlockFace.DOWN).getType().isAir()) {
+                if (!gracePeriod.contains(player) && isPlayerOnGround(player)) {
                     player.setAllowFlight(false);
                     player.setGliding(false);
                     boosted.remove(player);
@@ -294,7 +277,6 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                     }
                     Bukkit.getScheduler().runTaskLater(plugin, () -> flying.remove(player), 5L);
                 }
->>>>>>> 178c568261fc29069d6cb56f300d15ce927b0b59
             }
         }
     }
@@ -337,12 +319,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         return player.getWorld().getSpawnLocation().distance(player.getLocation()) <= spawnRadius;
     }
 
-<<<<<<< HEAD
     private boolean isPlayerOnGround(Player player) {
         // Check if there's a solid block below the player
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
         return !blockBelow.getType().isAir() && blockBelow.getType().isSolid();
-=======
+    }
+
     private boolean isBedrockPlayer(Player player) {
         try {
             Class<?> floodgateApi = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
@@ -353,6 +335,5 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         String uuid = player.getUniqueId().toString();
         return uuid.startsWith("00000000-0000-0000");
->>>>>>> 178c568261fc29069d6cb56f300d15ce927b0b59
     }
 }
