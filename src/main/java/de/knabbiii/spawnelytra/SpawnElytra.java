@@ -2,6 +2,7 @@ package de.knabbiii.spawnelytra;
 
 import de.knabbiii.spawnelytra.commands.SpawnElytraCommand;
 import de.knabbiii.spawnelytra.listener.SpawnBoostListener;
+import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.Objects;
@@ -19,6 +20,10 @@ public class SpawnElytra extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        
+        if (getConfig().getBoolean("enableMetrics", true)) {
+            new Metrics(this, 28033);
+        }
         
         this.listener = SpawnBoostListener.create(this);
         getServer().getPluginManager().registerEvents(listener, this);
