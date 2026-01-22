@@ -1,0 +1,86 @@
+# ===========================================
+# SpawnElytra v2.1 - Enhanced Configuration
+# ===========================================
+# Plugin by Knabbiii - Enhanced with features inspired by blax-k
+# 
+# This plugin allows players to use elytra-like flight mechanics at spawn
+# without requiring actual elytra wings. Players double-jump to activate flight.
+
+# Core Settings
+# =============
+
+# World where the elytra feature is enabled
+# Must be an exact world name (case-sensitive)
+# Example: "world", "spawn", "lobby"
+world: world
+
+# Radius around spawn where players can activate elytra flight
+# Measured in blocks from the world spawn point (the exact coordinates where 
+# players spawn when they first join the server or use /spawn command)
+# The spawn point is determined by the world's spawn location, which can be 
+# set using /setworldspawn command
+# Recommended: 50-200 blocks depending on your spawn area size
+spawnRadius: 50
+
+# Boost Settings
+# ==============
+
+# Enable/disable the boost feature entirely
+# When true: Players can press F (swap hands) to boost while flying
+# When false: No boost functionality available
+boostEnabled: true
+
+# Boost strength multiplier
+# Higher values = stronger boost, lower values = gentler boost
+# Recommended range: 2-8 (5 is a good balance)
+# Warning: Values above 10 may be too strong and cause client lag
+multiplyValue: 5
+
+# Direction of boost when pressing F key
+# Options:
+#   "forward" - Boosts player in the direction they're looking (default)
+#   "upward"  - Boosts player straight up vertically
+boostDirection: forward
+
+# Sound & Feedback
+# ================
+
+# Sound played when player uses boost
+# Must be a valid Bukkit Sound enum value
+# Popular options:
+#   ENTITY_BAT_TAKEOFF          - Bat wing sound (default)
+#   ENTITY_FIREWORK_ROCKET_BLAST - Firework explosion
+#   ITEM_ELYTRA_FLYING          - Elytra whoosh sound
+#   ENTITY_ENDER_DRAGON_FLAP    - Dragon wing flap
+# Full list: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
+boostSound: ENTITY_BAT_TAKEOFF
+
+# Message Settings
+# ================
+
+# Message shown to players when they activate elytra flight
+# %key% will be replaced with the boost key hint
+# Use color codes with & (example: &aGreen text)
+message: "Press %key% to boost yourself."
+
+# Show boost activation message in action bar
+# When true: Shows "Boost activated!" when player uses boost
+showBoostMessage: true
+
+# Show flight activation message with boost key hint
+# When true: Shows the message above when player starts flying
+showActivationMessage: true
+
+# Permission Settings
+# ===================
+# Permissions are defined in plugin.yml but referenced here for clarity:
+#
+# spawnelytra.use      - Allows using elytra flight (default: true)
+# spawnelytra.useboost - Allows using boost functionality (default: true)  
+# spawnelytra.admin    - Allows admin commands like /spawnelytra reload (default: op)
+# spawnelytra.*        - All permissions (default: op)
+
+permissions:
+  use: spawnelytra.use
+  boost: spawnelytra.useboost
+  admin: spawnelytra.admin
