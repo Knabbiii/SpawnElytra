@@ -46,3 +46,5 @@ buggynewpluggin/
 RELEASE.md
 PUBLISHING_GUIDE.md
 *.md.backup
+.github/RELEASE-PROMPT.md
+.github/RELEASE-TEMPLATE.md
