@@ -4,6 +4,10 @@ build/
 gradle-app.setting
 !gradle-wrapper.jar
 out/
+bin/
+
+# Dev server
+run/
 
 # IDE files
 .idea/
