@@ -39,6 +39,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final Set<UUID> managedPlayers = new HashSet<>();
     private final Map<UUID, ItemStack> originalChestplates = new HashMap<>();
     private final Set<UUID> bedrockPlayers = new HashSet<>();
+    private volatile boolean saveScheduled = false; // Track if save is already scheduled
     private final String message;
     private final Sound boostSound;
     private final String boostDirection;
@@ -325,9 +326,18 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
 
         if (isBedrockPlayer(player)) {
-            bedrockPlayers.add(player.getUniqueId());
+            bedrockPlayers.add(playerUUID);
+        }
+
+        // Check if player was flying before restart
+        if (flying.contains(playerUUID)) {
+            plugin.getLogger().info("Restoring flight state for " + player.getName());
+            if (flying.contains(playerUUID)) {
+                player.setGliding(true);
+            }
         }
     }
 
@@ -396,24 +406,47 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     }
 
     public void loadData() {
+        plugin.getLogger().info("Loading flying players data...");
+
         DataManager dataManager = DataManager.getInstance();
         DataManager.LoadedFlyingData data = dataManager.loadFlyingData();
+
+        plugin.getLogger().info("Loaded " + data.flyingPlayers.size() + " flying players");
+        plugin.getLogger().info("Loaded " + data.boosted.size() + " boosted players");
+        plugin.getLogger().info("Loaded " + data.originalChestplates.size() + " original chestplates");
+        
         flying.addAll(data.flyingPlayers);
         boosted.addAll(data.boosted);
         originalChestplates.putAll(data.originalChestplates);
+
+        // Debug: Print loaded UUIDs
+        for (UUID uuid : flying) {
+            plugin.getLogger().info("Loaded flying players: " + uuid);
+        }
     }
 
     public void saveData() {
-        DataManager dataManager = DataManager.getInstance();
-        // Make copies to avoid concurrent modification
-        List<UUID> flyingCopy = new ArrayList<>(flying);
-        List<UUID> boostedCopy = new ArrayList<>(boosted);
-        Map<UUID, ItemStack> chestplatesCopy = new HashMap<>(originalChestplates);
+        // If a save is already scheduled, don't schedule another one
+        if (saveScheduled) {
+            return;
+        }
 
-        // Save asynchronously to prevent server lag
-        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-            dataManager.saveFlyingData(flyingCopy, boostedCopy, chestplatesCopy);
-        });
+        saveScheduled = true;
+
+        plugin.getLogger().info("Scheduling data save...");
+        // Wait 2 seconds (40 ticks) before saving to batch multiple changes
+        Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            List<UUID> flyingCopy = new ArrayList<>(flying);
+            List<UUID> boostedCopy = new ArrayList<>(boosted);
+            Map<UUID, ItemStack> chestplatesCopy = new HashMap<>(originalChestplates);
+
+            // Save asynchronously to prevent server lag
+            Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+                DataManager.getInstance().saveFlyingData(flyingCopy, boostedCopy, chestplatesCopy);
+            });
+
+            saveScheduled = false;
+        }, 40L);
     }
 
     public void saveDataSync() {
