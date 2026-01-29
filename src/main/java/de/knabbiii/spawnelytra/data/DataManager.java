@@ -37,14 +37,28 @@ public class DataManager {
      * Save flying players to JSON
      */
     public void saveFlyingData(List<UUID> flyingPlayers, List<UUID> boosted, Map<UUID, ItemStack> originalChestplates) {
+        plugin.getLogger().info("saveFlyingData called with " + flyingPlayers.size() + " flying players");
+
+        // Commented out because of a weird bug
+        // Bedrock players disappear from the flying list before server shutdown
+        // Flying bedrock players are correctly in the flying list at all times
+        // But somehow at shutdown the list is empty
+        /**
         if (flyingPlayers.isEmpty()) {
+         plugin.getLogger().info("Flying list is empty, deleting file if it exists");
             if (dataFile.exists()) {
                 dataFile.delete();
             }
             return;
-        }
+         } **/
 
         try {
+            // Ensure parent directory exists
+            if (!dataFile.getParentFile().exists()) {
+                plugin.getLogger().info("Creating plugin data folder: " + dataFile.getParentFile().getAbsolutePath());
+                dataFile.getParentFile().mkdirs();
+            }
+            
             List<PlayerFlyingData> dataList = new ArrayList<>();
 
             for (UUID uuid : flyingPlayers) {
@@ -60,12 +74,15 @@ public class DataManager {
                 dataList.add(data);
             }
 
+            plugin.getLogger().info("Writing to file: " + dataFile.getAbsolutePath());
             try (Writer writer = new FileWriter(dataFile)) {
                 gson.toJson(dataList, writer);
             }
+            plugin.getLogger().info("Successfully saved " + dataList.size() + " flying players");
 
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to save flying data: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 
