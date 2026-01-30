@@ -27,11 +27,12 @@ public class SpawnElytra extends JavaPlugin {
         if (getConfig().getBoolean("enableMetrics", true)) {
             new Metrics(this, 28033);
         }
-        
-        this.listener = SpawnBoostListener.create(this);
+        if (this.listener == null) {
+            this.listener = SpawnBoostListener.create(this);
+            getServer().getPluginManager().registerEvents(listener, this);
+        }
+
         listener.loadData();
-        getServer().getPluginManager().registerEvents(listener, this);
-        
         SpawnElytraCommand commandHandler = new SpawnElytraCommand();
         Objects.requireNonNull(getCommand("spawnelytra")).setExecutor(commandHandler);
         Objects.requireNonNull(getCommand("spawnelytra")).setTabCompleter(commandHandler);
