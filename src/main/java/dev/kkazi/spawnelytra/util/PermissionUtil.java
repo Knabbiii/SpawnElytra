@@ -5,6 +5,8 @@ import net.luckperms.api.LuckPermsProvider;
 import net.luckperms.api.model.user.User;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,20 +29,20 @@ public class PermissionUtil {
         if (!luckPermsAvailable) return true;
         User user = luckPerms.getUserManager().getUser(player.getUUID());
         if (user == null) return true;
-        return user.getCachedData().getPermissionData().checkPermission("spawnelytra.use").asBoolean() || player.hasPermissions(2);
+        return user.getCachedData().getPermissionData().checkPermission("spawnelytra.use").asBoolean() || player.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)));
     }
 
     public static boolean canUseBoost(ServerPlayer player) {
         if (!luckPermsAvailable) return true;
         User user = luckPerms.getUserManager().getUser(player.getUUID());
         if (user == null) return true;
-        return user.getCachedData().getPermissionData().checkPermission("spawnelytra.useboost").asBoolean() || player.hasPermissions(2);
+        return user.getCachedData().getPermissionData().checkPermission("spawnelytra.useboost").asBoolean() || player.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)));
     }
 
     public static boolean hasPermission(CommandSourceStack source, String permission, int level) {
         if (permission.equals("spawnelytra.admin")) {
-            return source.hasPermission(2);
+            return source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)));
         }
-        return source.hasPermission(level);
+        return source.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)));
     }
 }
