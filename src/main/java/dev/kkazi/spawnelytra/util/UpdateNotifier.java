@@ -5,6 +5,8 @@ import com.google.gson.JsonParser;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.server.permissions.Permission;
+import net.minecraft.server.permissions.PermissionLevel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,8 +94,8 @@ public class UpdateNotifier {
         
         String uuid = player.getStringUUID();
         if (notifiedPlayers.contains(uuid)) return;
-        
-        if (player.hasPermissions(2)) {
+
+        if (player.permissions().hasPermission(new Permission.HasCommandLevel(PermissionLevel.byId(2)))) {
             notifiedPlayers.add(uuid);
             
             MinecraftServer server = player.level().getServer();
