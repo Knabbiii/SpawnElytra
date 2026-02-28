@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "de.knabbiii.spawnelytra"
-version = "2.4.0"
+version = "2.4.1"
 
 repositories {
     mavenCentral()
