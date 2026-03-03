@@ -4,6 +4,10 @@ build/
 gradle-app.setting
 !gradle-wrapper.jar
 out/
+bin/
+
+# Dev server
+run/
 
 # IDE files
 .idea/
@@ -42,3 +46,5 @@ buggynewpluggin/
 RELEASE.md
 PUBLISHING_GUIDE.md
 *.md.backup
+.github/RELEASE-PROMPT.md
+.github/RELEASE-TEMPLATE.md
