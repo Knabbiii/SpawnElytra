@@ -4,7 +4,7 @@ import dev.kkazi.spawnelytra.util.PermissionUtil;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
@@ -134,7 +134,7 @@ public class SpawnElytraListener {
         player.hurtMarked = true;
         
         try {
-            ResourceLocation soundLocation = ResourceLocation.parse(boostSound);
+            Identifier soundLocation = Identifier.parse(boostSound);
             BuiltInRegistries.SOUND_EVENT.getOptional(soundLocation).ifPresent(sound -> 
                 player.level().playSound(null, player.blockPosition(), sound, SoundSource.PLAYERS, 1.0f, 1.0f)
             );
