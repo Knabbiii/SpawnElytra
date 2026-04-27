@@ -75,7 +75,7 @@ public class SpawnElytraMod implements ModInitializer {
             ServerTickEvents.END_SERVER_TICK.register(server1 -> {
                 tickCounter++;
                 if (tickCounter >= 3) {
-                    listener.run();
+                    listener.run(server1);
                     tickCounter = 0;
                 }
             });
