@@ -5,6 +5,7 @@ import net.minecraft.core.BlockPos;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
+import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.entity.player.Player;
@@ -55,7 +56,20 @@ public class SpawnElytraListener {
         this.showActivationMessage = showActivationMessage;
     }
 
-    public void run() {
+    public void run(MinecraftServer server) {
+        // Stop flight and revoke mayfly for survival/adventure players not in the configured world
+        for (ServerPlayer player : server.getPlayerList().getPlayers()) {
+            boolean isSurvivalMode = player.gameMode() == GameType.SURVIVAL || player.gameMode() == GameType.ADVENTURE;
+            if (!player.level().equals(world) && isSurvivalMode) {
+                if (flying.contains(player.getUUID())) {
+                    stopFlight(player);
+                } else if (player.getAbilities().mayfly) {
+                    player.getAbilities().mayfly = false;
+                    player.onUpdateAbilities();
+                }
+            }
+        }
+
         for (Player playerEntity : world.players()) {
             if (!(playerEntity instanceof ServerPlayer player)) continue;
             if (player.gameMode() != GameType.SURVIVAL && player.gameMode() != GameType.ADVENTURE) continue;
@@ -141,7 +155,7 @@ public class SpawnElytraListener {
         } catch (Exception ignored) {}
         
         if (showBoostMessage) {
-            player.displayClientMessage(Component.literal("§aBoost activated!"), true);
+            player.sendOverlayMessage(Component.literal("§aBoost activated!"));
         }
     }
 
@@ -164,7 +178,7 @@ public class SpawnElytraListener {
                 String formatted = messageParts.length == 2
                         ? messageParts[0] + "§e[" + keybindName + "]§r" + messageParts[1]
                         : message;
-                player.displayClientMessage(Component.literal(formatted), true);
+                player.sendOverlayMessage(Component.literal(formatted));
             }
         }
     }
@@ -173,6 +187,18 @@ public class SpawnElytraListener {
         if (!player.level().equals(world)) return false;
         BlockPos spawn = world.getRespawnData().pos();
         return player.blockPosition().closerThan(spawn, spawnRadius);
+    }
+
+    public void stopFlight(ServerPlayer player) {
+        UUID uuid = player.getUUID();
+        flying.remove(uuid);
+        boosted.remove(uuid);
+        gracePeriod.remove(uuid);
+        gracePeriodDelay.remove(uuid);
+        landingDelay.remove(uuid);
+        player.getAbilities().mayfly = false;
+        player.stopFallFlying();
+        player.onUpdateAbilities();
     }
 
     public List<UUID> getFlying() {
