@@ -96,9 +96,9 @@ enableMetrics: true               # Send anonymous usage statistics to bStats
 
 ## Requirements
 
-- **Minecraft:** 1.20.1+ (compatible with 1.20.x and 1.21.x)
+- **Minecraft:** 1.20.1+ (compatible with 1.20.x, 1.21.x and Paper 26.1+)
 - **Server:** Spigot, Paper, or compatible
-- **Java:** 21+ (LTS recommended)
+- **Java:** 21+ (Java 25+ required for Paper 26.1+)
 
 ## Credits
 
