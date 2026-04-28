@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "de.knabbiii.spawnelytra"
-version = "2.4.1"
+version = "2.4.2"
 
 repositories {
     mavenCentral()
@@ -15,7 +15,7 @@ repositories {
 
 dependencies {
     // Use 1.20.1 API for broader compatibility with 1.20.x and 1.21.x
-    compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
     // Optional: Floodgate API for better Bedrock player detection
     compileOnly("org.geysermc.floodgate:api:2.2.3-SNAPSHOT")
     // bStats metrics
@@ -62,8 +62,8 @@ tasks.register("setupDevServer") {
         val serverJar = file("${serverDir}/server.jar")
         
         if (!serverJar.exists()) {
-            println("Downloading Paper 1.21.11...")
-            val downloadUrl = "https://fill-data.papermc.io/v1/objects/84f4283253ae7e50a25b26ef3b03d57818145534fb0c8a27925b7bae59222ba6/paper-1.21.11-99.jar"
+            println("Downloading Paper 26.1.2...")
+            val downloadUrl = "https://fill-data.papermc.io/v1/objects/e81be14567005cf9f490e3ba512e453e705dc50a720343ad8c58f58f3947c6db/paper-26.1.2-51.jar"
             ant.invokeMethod("get", mapOf(
                 "src" to downloadUrl,
                 "dest" to serverJar,
@@ -149,7 +149,9 @@ tasks.register<Exec>("runDevServer") {
     dependsOn("setupDevServer", "copyPlugin")
     
     workingDir = serverDir
-    commandLine("java", "-Xms1G", "-Xmx2G", "-jar", "server.jar", "--nogui")
+    val java21 = "C:/Program Files/Java/jdk-25/bin/java.exe"
+    val javaExe = if (file(java21).exists()) java21 else "java"
+    commandLine(javaExe, "-Xms1G", "-Xmx2G", "-jar", "server.jar", "--nogui")
     standardInput = System.`in`
     
     doFirst {
