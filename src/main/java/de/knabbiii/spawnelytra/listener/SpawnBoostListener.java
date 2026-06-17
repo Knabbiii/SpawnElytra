@@ -31,6 +31,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final Plugin plugin;
     private final int multiplyValue;
     private final int spawnRadius;
+    private final boolean ignoreYInSpawnRadius;
     private final boolean boostEnabled;
     private final World world;
     private final Set<UUID> flying = new HashSet<>();
@@ -66,6 +67,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 plugin,
                 config.getInt("multiplyValue"),
                 config.getInt("spawnRadius"),
+            config.getBoolean("ignoreYInSpawnRadius", false),
                 config.getBoolean("boostEnabled"),
                 Objects.requireNonNull(Bukkit.getWorld(config.getString("world"))
                         , "Invalid world " + config.getString("world")),
@@ -76,12 +78,13 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 config.getBoolean("showActivationMessage", true));
     }
 
-    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean boostEnabled,
+    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius, boolean boostEnabled,
                                World world, String message, Sound boostSound, String boostDirection,
                                boolean showBoostMessage, boolean showActivationMessage) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
+        this.ignoreYInSpawnRadius = ignoreYInSpawnRadius;
         this.boostEnabled = boostEnabled;
         this.world = world;
         this.message = message;
@@ -384,7 +387,18 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     private boolean isInSpawnRadius(Player player) {
         if (!player.getWorld().equals(world)) return false;
-        return player.getWorld().getSpawnLocation().distance(player.getLocation()) <= spawnRadius;
+        Location spawnLocation = player.getWorld().getSpawnLocation();
+        Location playerLocation = player.getLocation();
+
+        if (ignoreYInSpawnRadius) {
+            double deltaX = spawnLocation.getX() - playerLocation.getX();
+            double deltaZ = spawnLocation.getZ() - playerLocation.getZ();
+            double squaredDistance = deltaX * deltaX + deltaZ * deltaZ;
+            double squaredRadius = (double) spawnRadius * spawnRadius;
+            return squaredDistance <= squaredRadius;
+        }
+
+        return spawnLocation.distance(playerLocation) <= spawnRadius;
     }
 
     private boolean isPlayerOnGround(Player player) {

@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "de.knabbiii.spawnelytra"
-version = "2.4.2"
+version = "2.5.0"
 
 repositories {
     mavenCentral()
@@ -14,8 +14,8 @@ repositories {
 }
 
 dependencies {
-    // Use 1.20.1 API for broader compatibility with 1.20.x and 1.21.x
-    compileOnly("org.spigotmc:spigot-api:26.1.2-R0.1-SNAPSHOT")
+    // Compile against 1.20.1 API for compatibility with 1.20.x through latest
+    compileOnly("org.spigotmc:spigot-api:1.20.1-R0.1-SNAPSHOT")
     // Optional: Floodgate API for better Bedrock player detection
     compileOnly("org.geysermc.floodgate:api:2.2.3-SNAPSHOT")
     // bStats metrics
