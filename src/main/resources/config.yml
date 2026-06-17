@@ -22,6 +22,11 @@ world: world
 # Recommended: 50-200 blocks depending on your spawn area size
 spawnRadius: 50
 
+# Ignore Y coordinate when checking spawn radius
+# When true: Only horizontal distance (X/Z) is used, so players above/below spawn still count
+# When false: Full 3D distance is used (X/Y/Z)
+ignoreYInSpawnRadius: false
+
 # Boost Settings
 # ==============
 
