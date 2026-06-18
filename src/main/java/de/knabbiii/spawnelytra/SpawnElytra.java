@@ -13,6 +13,9 @@ public class SpawnElytra extends JavaPlugin {
     
     private static SpawnElytra instance;
     private SpawnBoostListener listener;
+    private static boolean debugMode = false;
+
+    public static boolean isDebugMode() { return debugMode; }
 
     public static SpawnElytra getInstance() {
         return instance;
@@ -22,6 +25,7 @@ public class SpawnElytra extends JavaPlugin {
     public void onEnable() {
         instance = this;
         saveDefaultConfig();
+        debugMode = getConfig().getBoolean("debugMode", false);
 
         new DataManager(this);
         
@@ -57,6 +61,7 @@ public class SpawnElytra extends JavaPlugin {
     @Override
     public void reloadConfig() {
         super.reloadConfig();
+        debugMode = getConfig().getBoolean("debugMode", false);
 
         if (listener != null) {
             listener.saveData(); // Save before canceling

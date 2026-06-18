@@ -3,6 +3,7 @@ package de.knabbiii.spawnelytra.data;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
+import de.knabbiii.spawnelytra.SpawnElytra;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -37,7 +38,7 @@ public class DataManager {
      * Save flying players to JSON
      */
     public void saveFlyingData(List<UUID> flyingPlayers, List<UUID> boosted, Map<UUID, ItemStack> originalChestplates) {
-        plugin.getLogger().info("saveFlyingData called with " + flyingPlayers.size() + " flying players");
+        if (SpawnElytra.isDebugMode()) plugin.getLogger().info("saveFlyingData called with " + flyingPlayers.size() + " flying players");
 
         // Commented out because of a weird bug
         // Bedrock players disappear from the flying list before server shutdown
@@ -55,7 +56,6 @@ public class DataManager {
         try {
             // Ensure parent directory exists
             if (!dataFile.getParentFile().exists()) {
-                plugin.getLogger().info("Creating plugin data folder: " + dataFile.getParentFile().getAbsolutePath());
                 dataFile.getParentFile().mkdirs();
             }
             
@@ -74,11 +74,11 @@ public class DataManager {
                 dataList.add(data);
             }
 
-            plugin.getLogger().info("Writing to file: " + dataFile.getAbsolutePath());
+            if (SpawnElytra.isDebugMode()) plugin.getLogger().info("Writing to file: " + dataFile.getAbsolutePath());
             try (Writer writer = new FileWriter(dataFile)) {
                 gson.toJson(dataList, writer);
             }
-            plugin.getLogger().info("Successfully saved " + dataList.size() + " flying players");
+            if (SpawnElytra.isDebugMode()) plugin.getLogger().info("Successfully saved " + dataList.size() + " flying players");
 
         } catch (IOException e) {
             plugin.getLogger().severe("Failed to save flying data: " + e.getMessage());
@@ -121,7 +121,7 @@ public class DataManager {
                     }
                 }
 
-                if (!result.flyingPlayers.isEmpty()) {
+                if (!result.flyingPlayers.isEmpty() && SpawnElytra.isDebugMode()) {
                     plugin.getLogger().info("Loaded " + result.flyingPlayers.size() + " Bedrock players to restore");
                 }
             }
