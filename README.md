@@ -20,11 +20,12 @@ A Minecraft plugin that enables elytra-like flight mechanics at spawn without re
 
 - **Double-jump to fly** - Activate elytra gliding anywhere within the spawn radius
 - **Enhanced boost mechanics** - Press F (Java) or Sneak (Bedrock) to get a speed boost while flying
-- **Bedrock/Geyser compatible** - Full support for Bedrock Edition players via GeyserMC
+- **Bedrock/Geyser compatible** - Full support for Bedrock Edition players via GeyserMC, virtual elytra cannot be displaced by inventory actions
 - **World-specific** - Configure which world the feature works in
 - **No fall damage** - Players won't take damage while using the elytra
 - **Lightweight** - Minimal performance impact with efficient event handling
 - **Sound effects** - Configurable boost sounds for better feedback
+- **Update checker** - Notifies ops on first join after restart if a new version is available
 - **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
 - **Permission system** - Fine-grained control over who can use what features
 - **Anonymous metrics** - Optional bStats integration (can be disabled in config)
@@ -52,6 +53,8 @@ message: "Press %key% to boost yourself."  # Action bar message (%key% = F/Sneak
 showBoostMessage: true            # Show boost activation message
 showActivationMessage: true       # Show flight activation message
 ignoreYInSpawnRadius: false       # When true: only X/Z distance checked (ignore height)
+checkForUpdates: true             # Check Modrinth for updates on startup
+debugMode: false                  # When true: verbose save/load logging enabled
 enableMetrics: true               # Send anonymous usage statistics to bStats
 ```
 
@@ -69,6 +72,8 @@ enableMetrics: true               # Send anonymous usage statistics to bStats
 | `showBoostMessage` | Show "Boost activated!" message | `true` |
 | `showActivationMessage` | Show activation message with F key hint | `true` |
 | `ignoreYInSpawnRadius` | When `true`: only horizontal distance (X/Z) is checked, height is ignored | `false` |
+| `checkForUpdates` | Check Modrinth for updates on startup, notify first op to join | `true` |
+| `debugMode` | Enable verbose save/load logging for troubleshooting | `false` |
 | `enableMetrics` | Send anonymous usage statistics to bStats | `true` |
 
 ## How to Use

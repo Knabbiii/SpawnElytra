@@ -9,6 +9,10 @@ bin/
 # Dev server
 run/
 
+# Platform release/plugin descriptions (local publishing working files)
+.github/release-descriptions/
+.github/plugin-descriptions/
+
 # IDE files
 .idea/
 *.iml
