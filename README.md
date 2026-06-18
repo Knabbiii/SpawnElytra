@@ -28,6 +28,7 @@ A Minecraft plugin that enables elytra-like flight mechanics at spawn without re
 - **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
 - **Permission system** - Fine-grained control over who can use what features
 - **Anonymous metrics** - Optional bStats integration (can be disabled in config)
+- **Flexible spawn radius** - Option to ignore Y coordinate so players can fly at any height within the radius
 
 ## Installation
 
@@ -50,6 +51,7 @@ boostSound: ENTITY_BAT_TAKEOFF    # Sound played when boosting
 message: "Press %key% to boost yourself."  # Action bar message (%key% = F/Sneak)
 showBoostMessage: true            # Show boost activation message
 showActivationMessage: true       # Show flight activation message
+ignoreYInSpawnRadius: false       # When true: only X/Z distance checked (ignore height)
 enableMetrics: true               # Send anonymous usage statistics to bStats
 ```
 
@@ -66,6 +68,7 @@ enableMetrics: true               # Send anonymous usage statistics to bStats
 | `boostDirection` | Direction of boost: `forward` or `upward` | `forward` |
 | `showBoostMessage` | Show "Boost activated!" message | `true` |
 | `showActivationMessage` | Show activation message with F key hint | `true` |
+| `ignoreYInSpawnRadius` | When `true`: only horizontal distance (X/Z) is checked, height is ignored | `false` |
 | `enableMetrics` | Send anonymous usage statistics to bStats | `true` |
 
 ## How to Use
@@ -96,9 +99,9 @@ enableMetrics: true               # Send anonymous usage statistics to bStats
 
 ## Requirements
 
-- **Minecraft:** 1.20.1+ (compatible with 1.20.x, 1.21.x and Paper 26.1+)
+- **Minecraft:** 1.20.1+ (compatible with all versions up to 26.2.x and beyond)
 - **Server:** Spigot, Paper, or compatible
-- **Java:** 21+ (Java 25+ required for Paper 26.1+)
+- **Java:** 21+
 
 ## Credits
 
