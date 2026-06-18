@@ -1,5 +1,6 @@
 package de.knabbiii.spawnelytra.listener;
 
+import de.knabbiii.spawnelytra.SpawnElytra;
 import de.knabbiii.spawnelytra.data.DataManager;
 import de.knabbiii.spawnelytra.util.UpdateChecker;
 import net.md_5.bungee.api.ChatMessageType;
@@ -351,7 +352,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         // Check if player was flying before restart
         if (flying.contains(playerUUID)) {
-            plugin.getLogger().info("Restoring flight state for " + player.getName());
+            if (SpawnElytra.isDebugMode()) plugin.getLogger().info("[debug] Restoring flight state for " + player.getName());
             if (flying.contains(playerUUID)) {
                 player.setGliding(true);
             }
@@ -445,22 +446,18 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     }
 
     public void loadData() {
-        plugin.getLogger().info("Loading flying players data...");
-
         DataManager dataManager = DataManager.getInstance();
         DataManager.LoadedFlyingData data = dataManager.loadFlyingData();
 
-        plugin.getLogger().info("Loaded " + data.flyingPlayers.size() + " flying players");
-        plugin.getLogger().info("Loaded " + data.boosted.size() + " boosted players");
-        plugin.getLogger().info("Loaded " + data.originalChestplates.size() + " original chestplates");
-        
         flying.addAll(data.flyingPlayers);
         boosted.addAll(data.boosted);
         originalChestplates.putAll(data.originalChestplates);
 
-        // Debug: Print loaded UUIDs
-        for (UUID uuid : flying) {
-            plugin.getLogger().info("Loaded flying players: " + uuid);
+        if (SpawnElytra.isDebugMode()) {
+            plugin.getLogger().info("[debug] Loaded " + data.flyingPlayers.size() + " flying, "
+                    + data.boosted.size() + " boosted, "
+                    + data.originalChestplates.size() + " chestplates");
+            flying.forEach(uuid -> plugin.getLogger().info("[debug] Flying: " + uuid));
         }
     }
 
@@ -472,7 +469,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         saveScheduled = true;
 
-        plugin.getLogger().info("Scheduling data save...");
+        if (SpawnElytra.isDebugMode()) plugin.getLogger().info("[debug] Scheduling data save...");
         // Wait 2 seconds (40 ticks) before saving to batch multiple changes
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             List<UUID> flyingCopy = new ArrayList<>(flying);

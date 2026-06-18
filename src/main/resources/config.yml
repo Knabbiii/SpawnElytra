@@ -86,6 +86,11 @@ enableMetrics: true
 # When false: No update check is performed
 checkForUpdates: true
 
+# Enable debug logging
+# When true: Logs verbose save/load info to console (useful for troubleshooting)
+# When false: Only important messages are logged
+debugMode: false
+
 # Permission Settings
 # ===================
 # Permissions are defined in plugin.yml but referenced here for clarity:
