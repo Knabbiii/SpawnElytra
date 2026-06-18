@@ -15,6 +15,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
@@ -311,18 +312,29 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         UUID playerUUID = player.getUniqueId();
 
-        // Prevent Bedrock players from removing virtual elytra while flying
-        if (flying.contains(playerUUID) && bedrockPlayers.contains(playerUUID)) {
-            if (event.getSlotType() == InventoryType.SlotType.ARMOR && event.getSlot() == 38) {
-                ItemStack clicked = event.getCurrentItem();
-                if (clicked != null && clicked.getType() == Material.ELYTRA) {
-                    ItemMeta meta = clicked.getItemMeta();
-                    if (meta != null && "§7Spawn Elytra".equals(meta.getDisplayName())) {
-                        event.setCancelled(true);
-                        player.sendMessage("§cYou can't remove the elytra while flying!");
-                    }
-                }
+        if (!flying.contains(playerUUID) || !bedrockPlayers.contains(playerUUID)) return;
+
+        // Block any interaction directly on the chestplate armor slot (slot 38)
+        if (event.getSlotType() == InventoryType.SlotType.ARMOR && event.getSlot() == 38) {
+            event.setCancelled(true);
+            return;
+        }
+
+        // Block right-clicking / shift-clicking a chestplate-type item in inventory,
+        // which would auto-equip it to slot 38 and displace the virtual elytra.
+        ItemStack currentItem = event.getCurrentItem();
+        if (currentItem != null && currentItem.getType().name().endsWith("_CHESTPLATE")) {
+            if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY
+                    || event.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
+                event.setCancelled(true);
             }
+        }
+
+        // Block placing a chestplate-type item onto slot 38 via cursor
+        ItemStack cursor = event.getCursor();
+        if (cursor != null && cursor.getType().name().endsWith("_CHESTPLATE")
+                && event.getSlotType() == InventoryType.SlotType.ARMOR && event.getSlot() == 38) {
+            event.setCancelled(true);
         }
     }
 
