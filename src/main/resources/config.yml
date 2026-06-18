@@ -81,6 +81,11 @@ showActivationMessage: true
 # When false: No data is sent to bStats
 enableMetrics: true
 
+# Check for updates on Modrinth at startup
+# When true: Notifies console and online ops if a new version is available
+# When false: No update check is performed
+checkForUpdates: true
+
 # Permission Settings
 # ===================
 # Permissions are defined in plugin.yml but referenced here for clarity:

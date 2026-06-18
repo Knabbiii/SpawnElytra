@@ -3,6 +3,7 @@ package de.knabbiii.spawnelytra;
 import de.knabbiii.spawnelytra.commands.SpawnElytraCommand;
 import de.knabbiii.spawnelytra.data.DataManager;
 import de.knabbiii.spawnelytra.listener.SpawnBoostListener;
+import de.knabbiii.spawnelytra.util.UpdateChecker;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -26,6 +27,9 @@ public class SpawnElytra extends JavaPlugin {
         
         if (getConfig().getBoolean("enableMetrics", true)) {
             new Metrics(this, 28033);
+        }
+        if (getConfig().getBoolean("checkForUpdates", true)) {
+            UpdateChecker.checkAsync(this);
         }
         if (this.listener == null) {
             this.listener = SpawnBoostListener.create(this);

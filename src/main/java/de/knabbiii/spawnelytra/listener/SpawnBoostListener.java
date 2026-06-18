@@ -1,6 +1,7 @@
 package de.knabbiii.spawnelytra.listener;
 
 import de.knabbiii.spawnelytra.data.DataManager;
+import de.knabbiii.spawnelytra.util.UpdateChecker;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
 import net.md_5.bungee.api.chat.ComponentBuilder;
@@ -42,6 +43,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final Map<UUID, ItemStack> originalChestplates = new HashMap<>();
     private final Set<UUID> bedrockPlayers = new HashSet<>();
     private volatile boolean saveScheduled = false; // Track if save is already scheduled
+    private boolean updateNotified = false; // Only notify the first op after each restart
     private final String message;
     private final Sound boostSound;
     private final String boostDirection;
@@ -353,6 +355,17 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             if (flying.contains(playerUUID)) {
                 player.setGliding(true);
             }
+        }
+
+        // Notify the first op that joins after a restart about available updates
+        if (!updateNotified && player.isOp() && UpdateChecker.isUpdateAvailable()) {
+            updateNotified = true;
+            Bukkit.getScheduler().runTaskLater(plugin, () ->
+                player.sendMessage("§e[SpawnElytra] §aUpdate available: §fv"
+                    + UpdateChecker.getLatestVersion()
+                    + "§7 (you have v" + plugin.getDescription().getVersion() + ")\n"
+                    + "§e[SpawnElytra] §7Download: §f" + UpdateChecker.getDownloadUrl()),
+            40L);
         }
     }
 
