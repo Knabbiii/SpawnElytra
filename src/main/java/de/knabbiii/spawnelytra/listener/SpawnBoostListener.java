@@ -17,6 +17,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryAction;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryType;
@@ -311,6 +312,24 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     }
 
     @EventHandler(priority = EventPriority.HIGHEST)
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+
+        if (!flying.contains(playerUUID) || !bedrockPlayers.contains(playerUUID)) return;
+
+        // Block right-clicking a chestplate or elytra in the hotbar while inventory is closed,
+        // which would auto-equip it and displace the virtual elytra.
+        Action action = event.getAction();
+        if (action == Action.RIGHT_CLICK_AIR || action == Action.RIGHT_CLICK_BLOCK) {
+            ItemStack item = event.getItem();
+            if (item != null && isChestSlotItem(item.getType())) {
+                event.setCancelled(true);
+            }
+        }
+    }
+
+    @EventHandler(priority = EventPriority.HIGHEST)
     public void onInventoryClick(InventoryClickEvent event) {
         if (!(event.getWhoClicked() instanceof Player player)) return;
         UUID playerUUID = player.getUniqueId();
@@ -323,19 +342,19 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             return;
         }
 
-        // Block right-clicking / shift-clicking a chestplate-type item in inventory,
+        // Block right-clicking / shift-clicking a chestplate-type item or elytra in inventory,
         // which would auto-equip it to slot 38 and displace the virtual elytra.
         ItemStack currentItem = event.getCurrentItem();
-        if (currentItem != null && currentItem.getType().name().endsWith("_CHESTPLATE")) {
+        if (currentItem != null && isChestSlotItem(currentItem.getType())) {
             if (event.getAction() == InventoryAction.MOVE_TO_OTHER_INVENTORY
                     || event.getAction() == InventoryAction.COLLECT_TO_CURSOR) {
                 event.setCancelled(true);
             }
         }
 
-        // Block placing a chestplate-type item onto slot 38 via cursor
+        // Block placing a chestplate-type item or elytra onto slot 38 via cursor
         ItemStack cursor = event.getCursor();
-        if (cursor != null && cursor.getType().name().endsWith("_CHESTPLATE")
+        if (cursor != null && isChestSlotItem(cursor.getType())
                 && event.getSlotType() == InventoryType.SlotType.ARMOR && event.getSlot() == 38) {
             event.setCancelled(true);
         }
@@ -425,6 +444,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }
 
         return spawnLocation.distance(playerLocation) <= spawnRadius;
+    }
+
+    private boolean isChestSlotItem(Material material) {
+        return material == Material.ELYTRA || material.name().endsWith("_CHESTPLATE");
     }
 
     private boolean isPlayerOnGround(Player player) {
