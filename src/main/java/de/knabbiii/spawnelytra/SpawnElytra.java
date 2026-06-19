@@ -50,9 +50,11 @@ public class SpawnElytra extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        if (listener != null) {
+        if (listener != null && DataManager.getInstance() != null) {
             listener.cancel();
             listener.saveDataSync(); // Use sync version on shutdown
+        } else if (listener != null) {
+            listener.cancel();
         }
         instance = null;
         getLogger().info("SpawnElytra v" + getDescription().getVersion() + " disabled!");
@@ -69,7 +71,9 @@ public class SpawnElytra extends JavaPlugin {
         }
 
         this.listener = SpawnBoostListener.create(this);
-        listener.loadData(); // Load data into new listener
+        if (DataManager.getInstance() != null) {
+            listener.loadData(); // Load data into new listener
+        }
         getServer().getPluginManager().registerEvents(listener, this);
 
         getLogger().info("SpawnElytra configuration reloaded!");
