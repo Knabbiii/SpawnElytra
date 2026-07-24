@@ -1,6 +1,8 @@
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
 plugins {
     java
-    id("io.github.goooler.shadow") version "8.1.8"
+    id("com.gradleup.shadow") version "9.0.0"
 }
 
 group = "de.knabbiii.spawnelytra"
@@ -34,20 +36,20 @@ tasks.jar {
 }
 
 // Configure shadow plugin for bStats
-tasks.shadowJar {
+tasks.named<ShadowJar>("shadowJar") {
     archiveBaseName.set("SpawnElytra")
     archiveVersion.set(version.toString())
     archiveClassifier.set("")
-    
+
     // Relocate bStats to avoid conflicts
     relocate("org.bstats", "de.knabbiii.spawnelytra.metrics")
-    
+
     minimize()
 }
 
 // Use shadowJar as the default build artifact
 tasks.build {
-    dependsOn(tasks.shadowJar)
+    dependsOn(tasks.named("shadowJar"))
 }
 
 // === Dev Server Setup ===
