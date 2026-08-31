@@ -37,7 +37,7 @@ public class DataManager {
     /**
      * Save flying players to JSON
      */
-    public void saveFlyingData(List<UUID> flyingPlayers, List<UUID> boosted, Map<UUID, ItemStack> originalChestplates) {
+    public void saveFlyingData(List<UUID> flyingPlayers, Map<UUID, Integer> boostCounts, Map<UUID, ItemStack> originalChestplates) {
         if (SpawnElytra.isDebugMode()) plugin.getLogger().info("saveFlyingData called with " + flyingPlayers.size() + " flying players");
 
         // Commented out because of a weird bug
@@ -64,7 +64,7 @@ public class DataManager {
             for (UUID uuid : flyingPlayers) {
                 PlayerFlyingData data = new PlayerFlyingData();
                 data.uuid = uuid.toString();
-                data.boosted = boosted.contains(uuid);
+                data.boostCount = boostCounts.getOrDefault(uuid, 0);
 
                 if (originalChestplates.containsKey(uuid)) {
                     ItemStack chestplate = originalChestplates.get(uuid);
@@ -108,7 +108,9 @@ public class DataManager {
                         UUID uuid = UUID.fromString(data.uuid);
                         result.flyingPlayers.add(uuid);
 
-                        if (data.boosted) result.boosted.add(uuid);
+                        if (data.boostCount != null && data.boostCount > 0) {
+                            result.boostCounts.put(uuid, data.boostCount);
+                        }
 
                         if (data.chestplateData != null) {
                             ItemStack chestplate = deserializeItemStack(data.chestplateData);
@@ -164,12 +166,12 @@ public class DataManager {
     private static class PlayerFlyingData {
         String uuid;
         String chestplateData;
-        Boolean boosted;
+        Integer boostCount;
     }
 
     public static class LoadedFlyingData {
         public Set<UUID> flyingPlayers = new HashSet<>();
-        public Set<UUID> boosted = new HashSet<>();
+        public Map<UUID, Integer> boostCounts = new HashMap<>();
         public Map<UUID, ItemStack> originalChestplates = new HashMap<>();
     }
 

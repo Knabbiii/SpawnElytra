@@ -47,6 +47,14 @@ multiplyValue: 5
 #   "upward"  - Boosts player straight up vertically
 boostDirection: forward
 
+# How many times a player can boost during a single flight
+# Default: 1 (same as before - one boost per flight)
+totalBoosts: 1
+
+# Cooldown in seconds between boosts, only relevant if totalBoosts is greater than 1
+# Default: 0 (no cooldown between boosts)
+boostToBoostCooldown: 0
+
 # Sound & Feedback
 # ================
 

@@ -39,7 +39,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final boolean boostEnabled;
     private final World world;
     private final Set<UUID> flying = new HashSet<>();
-    private final Set<UUID> boosted = new HashSet<>();
+    private final Map<UUID, Integer> boostCount = new HashMap<>();
+    private final Map<UUID, Long> lastBoostTime = new HashMap<>();
     private final Set<UUID> gracePeriod = new HashSet<>();
     private final Set<UUID> managedPlayers = new HashSet<>();
     private final Map<UUID, ItemStack> originalChestplates = new HashMap<>();
@@ -51,6 +52,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final String boostDirection;
     private final boolean showBoostMessage;
     private final boolean showActivationMessage;
+    private final int totalBoosts;
+    private final long boostToBoostCooldownMs;
 
     public static SpawnBoostListener create(Plugin plugin) {
         var config = plugin.getConfig();
@@ -80,12 +83,15 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 sound,
                 config.getString("boostDirection", "forward"),
                 config.getBoolean("showBoostMessage", true),
-                config.getBoolean("showActivationMessage", true));
+                config.getBoolean("showActivationMessage", true),
+                Math.max(1, config.getInt("totalBoosts", 1)),
+                Math.max(0L, (long) (config.getDouble("boostToBoostCooldown", 0) * 1000)));
     }
 
     private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius, boolean boostEnabled,
                                World world, String message, Sound boostSound, String boostDirection,
-                               boolean showBoostMessage, boolean showActivationMessage) {
+                               boolean showBoostMessage, boolean showActivationMessage,
+                               int totalBoosts, long boostToBoostCooldownMs) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
@@ -97,6 +103,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         this.boostDirection = boostDirection.toLowerCase();
         this.showBoostMessage = showBoostMessage;
         this.showActivationMessage = showActivationMessage;
+        this.totalBoosts = totalBoosts;
+        this.boostToBoostCooldownMs = boostToBoostCooldownMs;
 
         this.runTaskTimer(this.plugin, 0, 5);
     }
@@ -212,7 +220,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         if (!player.hasPermission("spawnelytra.useboost")) return;
         if (bedrockPlayers.contains(playerUUID)) return; // Bedrock uses sneak
-        if (!boostEnabled || !flying.contains(playerUUID) || boosted.contains(playerUUID)) return;
+        if (!boostEnabled || !flying.contains(playerUUID) || !canBoost(playerUUID)) return;
 
         event.setCancelled(true);
         applyBoost(player);
@@ -226,15 +234,30 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         if (!player.hasPermission("spawnelytra.useboost")) return;
         if (!bedrockPlayers.contains(playerUUID)) return;
         if (!event.isSneaking()) return;
-        if (!boostEnabled || !flying.contains(playerUUID) || boosted.contains(playerUUID)) return;
-        
+        if (!boostEnabled || !flying.contains(playerUUID) || !canBoost(playerUUID)) return;
+
         applyBoost(player);
     }
 
+    private boolean canBoost(UUID playerUUID) {
+        int used = boostCount.getOrDefault(playerUUID, 0);
+        if (used >= totalBoosts) return false;
+
+        if (used > 0 && boostToBoostCooldownMs > 0) {
+            long last = lastBoostTime.getOrDefault(playerUUID, 0L);
+            if (System.currentTimeMillis() - last < boostToBoostCooldownMs) return false;
+        }
+
+        return true;
+    }
+
     private void applyBoost(Player player) {
-        boosted.add(player.getUniqueId());
+        UUID playerUUID = player.getUniqueId();
+        int used = boostCount.getOrDefault(playerUUID, 0) + 1;
+        boostCount.put(playerUUID, used);
+        lastBoostTime.put(playerUUID, System.currentTimeMillis());
         saveData();
-        
+
         Vector velocity;
         if ("upward".equalsIgnoreCase(boostDirection)) {
             velocity = new Vector(0, multiplyValue, 0);
@@ -247,12 +270,14 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         player.playSound(player.getLocation(), boostSound, 1.0f, 1.0f);
 
         if (showBoostMessage) {
+            String text = totalBoosts > 1
+                    ? "§aBoost activated! §7(" + used + "/" + totalBoosts + ")"
+                    : "§aBoost activated!";
             try {
-                BaseComponent[] components = new ComponentBuilder("§aBoost activated!")
-                        .create();
+                BaseComponent[] components = new ComponentBuilder(text).create();
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
             } catch (NoClassDefFoundError | NoSuchMethodError e) {
-                player.sendMessage("§aBoost activated!");
+                player.sendMessage(text);
             }
         }
     }
@@ -273,7 +298,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             if (!event.isGliding() && !gracePeriod.contains(playerUUID) && isPlayerOnGround(player)) {
                 player.setAllowFlight(false);
                 player.setGliding(false);
-                boosted.remove(playerUUID);
+                resetBoosts(playerUUID);
                 
                 // Restore original chestplate for Bedrock
                 if (originalChestplates.containsKey(playerUUID)) {
@@ -297,7 +322,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             player.setAllowFlight(false);
             player.setGliding(false);
             flying.remove(playerUUID);
-            boosted.remove(playerUUID);
+            resetBoosts(playerUUID);
             managedPlayers.remove(playerUUID);
             saveData();
             // Restore chestplate for Bedrock
@@ -423,7 +448,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             
             // Clean up flying state
             flying.remove(playerUUID);
-            boosted.remove(playerUUID);
+            resetBoosts(playerUUID);
 
             saveData();
         }
@@ -456,6 +481,11 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         return !blockBelow.getType().isAir() && blockBelow.getType().isSolid();
     }
 
+    private void resetBoosts(UUID playerUUID) {
+        boostCount.remove(playerUUID);
+        lastBoostTime.remove(playerUUID);
+    }
+
     private boolean isBedrockPlayer(Player player) {
         try {
             Class<?> floodgateApi = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
@@ -473,12 +503,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         DataManager.LoadedFlyingData data = dataManager.loadFlyingData();
 
         flying.addAll(data.flyingPlayers);
-        boosted.addAll(data.boosted);
+        boostCount.putAll(data.boostCounts);
         originalChestplates.putAll(data.originalChestplates);
 
         if (SpawnElytra.isDebugMode()) {
             plugin.getLogger().info("[debug] Loaded " + data.flyingPlayers.size() + " flying, "
-                    + data.boosted.size() + " boosted, "
+                    + data.boostCounts.size() + " with boosts used, "
                     + data.originalChestplates.size() + " chestplates");
             flying.forEach(uuid -> plugin.getLogger().info("[debug] Flying: " + uuid));
         }
@@ -496,12 +526,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         // Wait 2 seconds (40 ticks) before saving to batch multiple changes
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             List<UUID> flyingCopy = new ArrayList<>(flying);
-            List<UUID> boostedCopy = new ArrayList<>(boosted);
+            Map<UUID, Integer> boostCountCopy = new HashMap<>(boostCount);
             Map<UUID, ItemStack> chestplatesCopy = new HashMap<>(originalChestplates);
 
             // Save asynchronously to prevent server lag
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                DataManager.getInstance().saveFlyingData(flyingCopy, boostedCopy, chestplatesCopy);
+                DataManager.getInstance().saveFlyingData(flyingCopy, boostCountCopy, chestplatesCopy);
             });
 
             saveScheduled = false;
@@ -512,7 +542,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         // Synchronous save for shutdown
         DataManager.getInstance().saveFlyingData(
                 new ArrayList<>(flying),
-                new ArrayList<>(boosted),
+                new HashMap<>(boostCount),
                 new HashMap<>(originalChestplates)
         );
     }
