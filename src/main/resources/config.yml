@@ -47,6 +47,11 @@ multiplyValue: 5
 #   "upward"  - Boosts player straight up vertically
 boostDirection: forward
 
+# Block using firework rockets to boost while flying via spawn elytra
+# Only applies while flying without a real elytra equipped (this plugin's own flight mode)
+# Does NOT affect firework use while wearing a real elytra
+disableFireworksInSpawnElytra: false
+
 # Sound & Feedback
 # ================
 
