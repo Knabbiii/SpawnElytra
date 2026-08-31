@@ -27,6 +27,22 @@ spawnRadius: 50
 # When false: Full 3D distance is used (X/Y/Z)
 ignoreYInSpawnRadius: false
 
+# Spawn area shape
+# Options:
+#   "circle"    - Use spawnRadius/ignoreYInSpawnRadius around the world spawn point (default)
+#   "rectangle" - Use a fixed box defined by rectangularArea below, ignores spawnRadius
+spawnAreaMode: circle
+
+# Corners of the box used when spawnAreaMode is "rectangle"
+# Any two opposite corners work - the plugin sorts min/max automatically
+rectangularArea:
+  x1: 0
+  y1: 0
+  z1: 0
+  x2: 100
+  y2: 100
+  z2: 100
+
 # Boost Settings
 # ==============
 

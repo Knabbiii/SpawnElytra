@@ -36,6 +36,9 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final int multiplyValue;
     private final int spawnRadius;
     private final boolean ignoreYInSpawnRadius;
+    private final boolean useRectangularArea;
+    private final double rectMinX, rectMinY, rectMinZ;
+    private final double rectMaxX, rectMaxY, rectMaxZ;
     private final boolean boostEnabled;
     private final World world;
     private final Set<UUID> flying = new HashSet<>();
@@ -68,11 +71,22 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             sound = Sound.ENTITY_BAT_TAKEOFF;
         }
 
+        boolean useRectangularArea = "rectangle".equalsIgnoreCase(config.getString("spawnAreaMode", "circle"));
+        double x1 = config.getDouble("rectangularArea.x1", 0);
+        double y1 = config.getDouble("rectangularArea.y1", 0);
+        double z1 = config.getDouble("rectangularArea.z1", 0);
+        double x2 = config.getDouble("rectangularArea.x2", 0);
+        double y2 = config.getDouble("rectangularArea.y2", 0);
+        double z2 = config.getDouble("rectangularArea.z2", 0);
+
         return new SpawnBoostListener(
                 plugin,
                 config.getInt("multiplyValue"),
                 config.getInt("spawnRadius"),
             config.getBoolean("ignoreYInSpawnRadius", false),
+                useRectangularArea,
+                Math.min(x1, x2), Math.min(y1, y2), Math.min(z1, z2),
+                Math.max(x1, x2), Math.max(y1, y2), Math.max(z1, z2),
                 config.getBoolean("boostEnabled"),
                 Objects.requireNonNull(Bukkit.getWorld(config.getString("world"))
                         , "Invalid world " + config.getString("world")),
@@ -83,13 +97,22 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 config.getBoolean("showActivationMessage", true));
     }
 
-    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius, boolean boostEnabled,
+    private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius,
+                               boolean useRectangularArea, double rectMinX, double rectMinY, double rectMinZ,
+                               double rectMaxX, double rectMaxY, double rectMaxZ, boolean boostEnabled,
                                World world, String message, Sound boostSound, String boostDirection,
                                boolean showBoostMessage, boolean showActivationMessage) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
         this.ignoreYInSpawnRadius = ignoreYInSpawnRadius;
+        this.useRectangularArea = useRectangularArea;
+        this.rectMinX = rectMinX;
+        this.rectMinY = rectMinY;
+        this.rectMinZ = rectMinZ;
+        this.rectMaxX = rectMaxX;
+        this.rectMaxY = rectMaxY;
+        this.rectMaxZ = rectMaxZ;
         this.boostEnabled = boostEnabled;
         this.world = world;
         this.message = message;
@@ -432,8 +455,15 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     private boolean isInSpawnRadius(Player player) {
         if (!player.getWorld().equals(world)) return false;
-        Location spawnLocation = player.getWorld().getSpawnLocation();
         Location playerLocation = player.getLocation();
+
+        if (useRectangularArea) {
+            return playerLocation.getX() >= rectMinX && playerLocation.getX() <= rectMaxX
+                    && playerLocation.getY() >= rectMinY && playerLocation.getY() <= rectMaxY
+                    && playerLocation.getZ() >= rectMinZ && playerLocation.getZ() <= rectMaxZ;
+        }
+
+        Location spawnLocation = player.getWorld().getSpawnLocation();
 
         if (ignoreYInSpawnRadius) {
             double deltaX = spawnLocation.getX() - playerLocation.getX();
