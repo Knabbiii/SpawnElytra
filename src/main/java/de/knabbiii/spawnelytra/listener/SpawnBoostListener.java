@@ -458,8 +458,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Location playerLocation = player.getLocation();
 
         if (useRectangularArea) {
-            return playerLocation.getX() >= rectMinX && playerLocation.getX() <= rectMaxX
-                    && playerLocation.getY() >= rectMinY && playerLocation.getY() <= rectMaxY
+            boolean insideY = ignoreYInSpawnRadius
+                    || (playerLocation.getY() >= rectMinY && playerLocation.getY() <= rectMaxY);
+            return insideY
+                    && playerLocation.getX() >= rectMinX && playerLocation.getX() <= rectMaxX
                     && playerLocation.getZ() >= rectMinZ && playerLocation.getZ() <= rectMaxZ;
         }
 
