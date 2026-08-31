@@ -6,6 +6,7 @@ import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
+import org.bukkit.entity.Player;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,6 +40,29 @@ public class SpawnElytraCommand implements CommandExecutor, TabCompleter {
                 sendInfoMessage(sender);
                 return true;
 
+            case "visualize":
+                if (!sender.hasPermission("spawnelytra.admin")) {
+                    sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+                    return true;
+                }
+                if (!(sender instanceof Player player)) {
+                    sender.sendMessage(ChatColor.RED + "Only players can use this command.");
+                    return true;
+                }
+
+                int seconds = 10;
+                if (args.length > 1) {
+                    try {
+                        seconds = Math.max(1, Math.min(60, Integer.parseInt(args[1])));
+                    } catch (NumberFormatException ignored) {
+                        sender.sendMessage(ChatColor.RED + "Invalid number of seconds, using default of 10.");
+                    }
+                }
+
+                getPlugin().getListener().visualizeArea(player, seconds);
+                sender.sendMessage(ChatColor.GREEN + "Showing spawn area outline for " + seconds + " seconds.");
+                return true;
+
             default:
                 sendHelpMessage(sender);
                 return true;
@@ -52,8 +76,9 @@ public class SpawnElytraCommand implements CommandExecutor, TabCompleter {
         
         if (sender.hasPermission("spawnelytra.admin")) {
             messages.add("%s/spawnelytra reload %s- Reload plugin configuration".formatted(ChatColor.YELLOW, ChatColor.WHITE));
+            messages.add("%s/spawnelytra visualize [seconds] %s- Show the spawn area outline with particles".formatted(ChatColor.YELLOW, ChatColor.WHITE));
         }
-        
+
         messages.add("%sPlugin by Knabbiii - Enhanced with ideas from blax-k".formatted(ChatColor.GRAY));
         sender.sendMessage(messages.toArray(new String[0]));
     }
@@ -96,6 +121,7 @@ public class SpawnElytraCommand implements CommandExecutor, TabCompleter {
             
             if (sender.hasPermission("spawnelytra.admin")) {
                 completions.add("reload");
+                completions.add("visualize");
             }
             
             return completions.stream()

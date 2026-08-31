@@ -21,6 +21,10 @@ public class SpawnElytra extends JavaPlugin {
         return instance;
     }
 
+    public SpawnBoostListener getListener() {
+        return listener;
+    }
+
     @Override
     public void onEnable() {
         instance = this;

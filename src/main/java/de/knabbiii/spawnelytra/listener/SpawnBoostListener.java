@@ -26,6 +26,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 
 import java.util.*;
@@ -47,6 +48,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final Set<UUID> managedPlayers = new HashSet<>();
     private final Map<UUID, ItemStack> originalChestplates = new HashMap<>();
     private final Set<UUID> bedrockPlayers = new HashSet<>();
+    private final Map<UUID, BukkitTask> visualizationTasks = new HashMap<>();
     private volatile boolean saveScheduled = false; // Track if save is already scheduled
     private boolean updateNotified = false; // Only notify the first op after each restart
     private final String message;
@@ -498,6 +500,69 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         String uuid = player.getUniqueId().toString();
         return uuid.startsWith("00000000-0000-0000");
+    }
+
+    /**
+     * Shows a purple particle outline of the configured spawn area to one player
+     * for the given duration. Only visible to that player, not broadcast to others.
+     */
+    public void visualizeArea(Player player, int seconds) {
+        UUID playerUUID = player.getUniqueId();
+
+        BukkitTask existing = visualizationTasks.remove(playerUUID);
+        if (existing != null) existing.cancel();
+
+        int maxTicks = seconds * 20;
+        BukkitTask task = new BukkitRunnable() {
+            private int ticksElapsed = 0;
+
+            @Override
+            public void run() {
+                if (ticksElapsed >= maxTicks || !player.isOnline()) {
+                    visualizationTasks.remove(playerUUID);
+                    this.cancel();
+                    return;
+                }
+
+                drawAreaOutline(player);
+                ticksElapsed += 10;
+            }
+        }.runTaskTimer(plugin, 0L, 10L);
+
+        visualizationTasks.put(playerUUID, task);
+    }
+
+    private void drawAreaOutline(Player player) {
+        if (!player.getWorld().equals(world)) return;
+
+        double y = player.getLocation().getY();
+        Particle.DustOptions purple = new Particle.DustOptions(Color.fromRGB(170, 0, 255), 1.2f);
+
+        if (useRectangularArea) {
+            for (double x = rectMinX; x <= rectMaxX; x += 1.0) {
+                player.spawnParticle(Particle.DUST, new Location(world, x, y, rectMinZ), 1, 0, 0, 0, 0, purple);
+                player.spawnParticle(Particle.DUST, new Location(world, x, y, rectMaxZ), 1, 0, 0, 0, 0, purple);
+            }
+            for (double z = rectMinZ; z <= rectMaxZ; z += 1.0) {
+                player.spawnParticle(Particle.DUST, new Location(world, rectMinX, y, z), 1, 0, 0, 0, 0, purple);
+                player.spawnParticle(Particle.DUST, new Location(world, rectMaxX, y, z), 1, 0, 0, 0, 0, purple);
+            }
+        } else {
+            Location center = world.getSpawnLocation();
+            for (double angle = 0; angle < 360; angle += 4) {
+                double rad = Math.toRadians(angle);
+                double x = center.getX() + spawnRadius * Math.cos(rad);
+                double z = center.getZ() + spawnRadius * Math.sin(rad);
+                player.spawnParticle(Particle.DUST, new Location(world, x, y, z), 1, 0, 0, 0, 0, purple);
+            }
+        }
+    }
+
+    @Override
+    public void cancel() {
+        super.cancel();
+        visualizationTasks.values().forEach(BukkitTask::cancel);
+        visualizationTasks.clear();
     }
 
     public void loadData() {
