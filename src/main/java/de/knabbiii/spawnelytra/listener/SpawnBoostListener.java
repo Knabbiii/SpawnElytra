@@ -106,6 +106,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         //Detect Players near Spawn and allow them to toggle flight
         Bukkit.getOnlinePlayers().forEach(player -> {
             if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+            if (!player.hasPermission("spawnelytra.use")) return;
             UUID playerUUID = player.getUniqueId();
             boolean inSpawnRadius = isInSpawnRadius(player);
             boolean isCurrentlyFlying = flying.contains(playerUUID);
@@ -132,6 +133,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
         if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+        if (!player.hasPermission("spawnelytra.use")) return;
         if (!isInSpawnRadius(player)) return;
 
         // If player is already flying or gliding, just cancel - don't process again
