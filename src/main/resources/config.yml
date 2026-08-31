@@ -27,6 +27,16 @@ spawnRadius: 50
 # When false: Full 3D distance is used (X/Y/Z)
 ignoreYInSpawnRadius: false
 
+# Game Mode Restrictions
+# ======================
+# Survival is always allowed and cannot be disabled here.
+
+# Disable spawn elytra flight while in Creative mode
+disableInCreative: true
+
+# Disable spawn elytra flight while in Adventure mode
+disableInAdventure: false
+
 # Boost Settings
 # ==============
 

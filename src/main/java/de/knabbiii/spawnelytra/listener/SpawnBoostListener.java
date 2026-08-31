@@ -51,6 +51,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final String boostDirection;
     private final boolean showBoostMessage;
     private final boolean showActivationMessage;
+    private final boolean disableInCreative;
+    private final boolean disableInAdventure;
 
     public static SpawnBoostListener create(Plugin plugin) {
         var config = plugin.getConfig();
@@ -80,12 +82,15 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 sound,
                 config.getString("boostDirection", "forward"),
                 config.getBoolean("showBoostMessage", true),
-                config.getBoolean("showActivationMessage", true));
+                config.getBoolean("showActivationMessage", true),
+                config.getBoolean("disableInCreative", true),
+                config.getBoolean("disableInAdventure", false));
     }
 
     private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius, boolean boostEnabled,
                                World world, String message, Sound boostSound, String boostDirection,
-                               boolean showBoostMessage, boolean showActivationMessage) {
+                               boolean showBoostMessage, boolean showActivationMessage,
+                               boolean disableInCreative, boolean disableInAdventure) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
@@ -97,6 +102,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         this.boostDirection = boostDirection.toLowerCase();
         this.showBoostMessage = showBoostMessage;
         this.showActivationMessage = showActivationMessage;
+        this.disableInCreative = disableInCreative;
+        this.disableInAdventure = disableInAdventure;
 
         this.runTaskTimer(this.plugin, 0, 5);
     }
@@ -105,7 +112,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     public void run() {
         //Detect Players near Spawn and allow them to toggle flight
         Bukkit.getOnlinePlayers().forEach(player -> {
-            if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+            if (!isGameModeAllowed(player.getGameMode())) return;
             UUID playerUUID = player.getUniqueId();
             boolean inSpawnRadius = isInSpawnRadius(player);
             boolean isCurrentlyFlying = flying.contains(playerUUID);
@@ -131,7 +138,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     public void onDoubleJump(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
-        if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+        if (!isGameModeAllowed(player.getGameMode())) return;
         if (!isInSpawnRadius(player)) return;
 
         // If player is already flying or gliding, just cancel - don't process again
@@ -390,6 +397,26 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     }
 
     @EventHandler
+    public void onGameModeChange(PlayerGameModeChangeEvent event) {
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+
+        if (!flying.contains(playerUUID) || isGameModeAllowed(event.getNewGameMode())) return;
+
+        // Switched into a disallowed game mode while flying via spawn elytra - force landing
+        player.setGliding(false);
+        player.setAllowFlight(false);
+        boosted.remove(playerUUID);
+        flying.remove(playerUUID);
+        managedPlayers.remove(playerUUID);
+        saveData();
+
+        if (originalChestplates.containsKey(playerUUID)) {
+            player.getInventory().setChestplate(originalChestplates.remove(playerUUID));
+        }
+    }
+
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerUUID = event.getPlayer().getUniqueId();
 
@@ -444,6 +471,15 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }
 
         return spawnLocation.distance(playerLocation) <= spawnRadius;
+    }
+
+    private boolean isGameModeAllowed(GameMode gameMode) {
+        return switch (gameMode) {
+            case SURVIVAL -> true;
+            case CREATIVE -> !disableInCreative;
+            case ADVENTURE -> !disableInAdventure;
+            default -> false;
+        };
     }
 
     private boolean isChestSlotItem(Material material) {
