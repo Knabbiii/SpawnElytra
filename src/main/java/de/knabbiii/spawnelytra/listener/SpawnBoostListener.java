@@ -2,6 +2,7 @@ package de.knabbiii.spawnelytra.listener;
 
 import de.knabbiii.spawnelytra.SpawnElytra;
 import de.knabbiii.spawnelytra.data.DataManager;
+import de.knabbiii.spawnelytra.util.BedrockSupport;
 import de.knabbiii.spawnelytra.util.UpdateChecker;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -365,7 +366,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
 
-        if (isBedrockPlayer(player)) {
+        if (BedrockSupport.isBedrockPlayer(plugin, player)) {
             bedrockPlayers.add(playerUUID);
         }
 
@@ -395,6 +396,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         // Clean up tracking for this player
         bedrockPlayers.remove(playerUUID);
+        BedrockSupport.forget(playerUUID);
     }
 
     @EventHandler
@@ -454,18 +456,6 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         // Check if there's a solid block below the player
         Block blockBelow = player.getLocation().subtract(0, 0.1, 0).getBlock();
         return !blockBelow.getType().isAir() && blockBelow.getType().isSolid();
-    }
-
-    private boolean isBedrockPlayer(Player player) {
-        try {
-            Class<?> floodgateApi = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
-            Object api = floodgateApi.getMethod("getInstance").invoke(null);
-            return (boolean) floodgateApi.getMethod("isFloodgatePlayer", java.util.UUID.class)
-                    .invoke(api, player.getUniqueId());
-        } catch (Exception ignored) {}
-
-        String uuid = player.getUniqueId().toString();
-        return uuid.startsWith("00000000-0000-0000");
     }
 
     public void loadData() {
