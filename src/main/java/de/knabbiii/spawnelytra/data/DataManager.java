@@ -4,7 +4,6 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
 import de.knabbiii.spawnelytra.SpawnElytra;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.*;
@@ -35,42 +34,25 @@ public class DataManager {
     }
 
     /**
-     * Save flying players to JSON
+     * Save flying players to JSON.
+     * Chestplate backups for Bedrock players are stored on the player's own
+     * PersistentDataContainer instead, so they survive restarts without needing to be saved here.
      */
-    public void saveFlyingData(List<UUID> flyingPlayers, List<UUID> boosted, Map<UUID, ItemStack> originalChestplates) {
+    public void saveFlyingData(List<UUID> flyingPlayers, List<UUID> boosted) {
         if (SpawnElytra.isDebugMode()) plugin.getLogger().info("saveFlyingData called with " + flyingPlayers.size() + " flying players");
-
-        // Commented out because of a weird bug
-        // Bedrock players disappear from the flying list before server shutdown
-        // Flying bedrock players are correctly in the flying list at all times
-        // But somehow at shutdown the list is empty
-        /**
-        if (flyingPlayers.isEmpty()) {
-         plugin.getLogger().info("Flying list is empty, deleting file if it exists");
-            if (dataFile.exists()) {
-                dataFile.delete();
-            }
-            return;
-         } **/
 
         try {
             // Ensure parent directory exists
             if (!dataFile.getParentFile().exists()) {
                 dataFile.getParentFile().mkdirs();
             }
-            
+
             List<PlayerFlyingData> dataList = new ArrayList<>();
 
             for (UUID uuid : flyingPlayers) {
                 PlayerFlyingData data = new PlayerFlyingData();
                 data.uuid = uuid.toString();
                 data.boosted = boosted.contains(uuid);
-
-                if (originalChestplates.containsKey(uuid)) {
-                    ItemStack chestplate = originalChestplates.get(uuid);
-                    data.chestplateData = serializeItemStack(chestplate);
-                }
-
                 dataList.add(data);
             }
 
@@ -109,13 +91,6 @@ public class DataManager {
                         result.flyingPlayers.add(uuid);
 
                         if (data.boosted) result.boosted.add(uuid);
-
-                        if (data.chestplateData != null) {
-                            ItemStack chestplate = deserializeItemStack(data.chestplateData);
-                            if (chestplate != null) {
-                                result.originalChestplates.put(uuid, chestplate);
-                            }
-                        }
                     } catch (IllegalArgumentException e) {
                         plugin.getLogger().warning("Invalid UUID: " + data.uuid);
                     }
@@ -133,44 +108,14 @@ public class DataManager {
         return result;
     }
 
-
-    private String serializeItemStack(ItemStack item) {
-        try {
-            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-            org.bukkit.util.io.BukkitObjectOutputStream dataOutput =
-                    new org.bukkit.util.io.BukkitObjectOutputStream(outputStream);
-            dataOutput.writeObject(item);
-            dataOutput.close();
-            return Base64.getEncoder().encodeToString(outputStream.toByteArray());
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-    private ItemStack deserializeItemStack(String data) {
-        try {
-            ByteArrayInputStream inputStream =
-                    new ByteArrayInputStream(Base64.getDecoder().decode(data));
-            org.bukkit.util.io.BukkitObjectInputStream dataInput =
-                    new org.bukkit.util.io.BukkitObjectInputStream(inputStream);
-            ItemStack item = (ItemStack) dataInput.readObject();
-            dataInput.close();
-            return item;
-        } catch (IOException | ClassNotFoundException e) {
-            return null;
-        }
-    }
-
     private static class PlayerFlyingData {
         String uuid;
-        String chestplateData;
         Boolean boosted;
     }
 
     public static class LoadedFlyingData {
         public Set<UUID> flyingPlayers = new HashSet<>();
         public Set<UUID> boosted = new HashSet<>();
-        public Map<UUID, ItemStack> originalChestplates = new HashMap<>();
     }
 
 }
