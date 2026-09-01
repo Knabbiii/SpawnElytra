@@ -29,10 +29,7 @@ ignoreYInSpawnRadius: false
 
 # Game Mode Restrictions
 # ======================
-# Survival is always allowed and cannot be disabled here.
-
-# Disable spawn elytra flight while in Creative mode
-disableInCreative: true
+# Survival is always allowed and Creative is always disabled - neither can be changed here.
 
 # Disable spawn elytra flight while in Adventure mode
 disableInAdventure: false
