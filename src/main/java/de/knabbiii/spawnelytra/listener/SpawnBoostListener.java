@@ -107,6 +107,20 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Bukkit.getOnlinePlayers().forEach(player -> {
             if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
             UUID playerUUID = player.getUniqueId();
+
+            if (!player.hasPermission("spawnelytra.use")) {
+                // Permission was revoked (e.g. mid-flight) - forcibly strip any flight we granted
+                if (flying.contains(playerUUID) || managedPlayers.contains(playerUUID) || player.getAllowFlight()) {
+                    player.setAllowFlight(false);
+                    player.setGliding(false);
+                    flying.remove(playerUUID);
+                    managedPlayers.remove(playerUUID);
+                    boosted.remove(playerUUID);
+                    saveData();
+                }
+                return;
+            }
+
             boolean inSpawnRadius = isInSpawnRadius(player);
             boolean isCurrentlyFlying = flying.contains(playerUUID);
 
@@ -132,6 +146,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
         if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+        if (!player.hasPermission("spawnelytra.use")) {
+            // No permission - don't let the native double-jump flight toggle activate
+            event.setCancelled(true);
+            player.setAllowFlight(false);
+            return;
+        }
         if (!isInSpawnRadius(player)) return;
 
         // If player is already flying or gliding, just cancel - don't process again
@@ -176,7 +196,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }, 5);
 
 
-        if (showActivationMessage && boostEnabled) {
+        if (showActivationMessage && boostEnabled && player.hasPermission("spawnelytra.useboost")) {
             if (isBedrock) {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
                     new ComponentBuilder("§aPress SNEAK to boost yourself!").create());
