@@ -38,7 +38,7 @@ public class DataManager {
      * Chestplate backups for Bedrock players are stored on the player's own
      * PersistentDataContainer instead, so they survive restarts without needing to be saved here.
      */
-    public void saveFlyingData(List<UUID> flyingPlayers, List<UUID> boosted) {
+    public void saveFlyingData(List<UUID> flyingPlayers, Map<UUID, Integer> boostCounts) {
         if (SpawnElytra.isDebugMode()) plugin.getLogger().info("saveFlyingData called with " + flyingPlayers.size() + " flying players");
 
         try {
@@ -52,7 +52,7 @@ public class DataManager {
             for (UUID uuid : flyingPlayers) {
                 PlayerFlyingData data = new PlayerFlyingData();
                 data.uuid = uuid.toString();
-                data.boosted = boosted.contains(uuid);
+                data.boostCount = boostCounts.getOrDefault(uuid, 0);
                 dataList.add(data);
             }
 
@@ -90,7 +90,9 @@ public class DataManager {
                         UUID uuid = UUID.fromString(data.uuid);
                         result.flyingPlayers.add(uuid);
 
-                        if (data.boosted) result.boosted.add(uuid);
+                        if (data.boostCount != null && data.boostCount > 0) {
+                            result.boostCounts.put(uuid, data.boostCount);
+                        }
                     } catch (IllegalArgumentException e) {
                         plugin.getLogger().warning("Invalid UUID: " + data.uuid);
                     }
@@ -110,12 +112,12 @@ public class DataManager {
 
     private static class PlayerFlyingData {
         String uuid;
-        Boolean boosted;
+        Integer boostCount;
     }
 
     public static class LoadedFlyingData {
         public Set<UUID> flyingPlayers = new HashSet<>();
-        public Set<UUID> boosted = new HashSet<>();
+        public Map<UUID, Integer> boostCounts = new HashMap<>();
     }
 
 }
