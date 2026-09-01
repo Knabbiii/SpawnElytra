@@ -44,6 +44,13 @@ rectangularArea:
   y2: 100
   z2: 100
 
+# Game Mode Restrictions
+# ======================
+# Survival is always allowed and Creative is always disabled - neither can be changed here.
+
+# Disable spawn elytra flight while in Adventure mode
+disableInAdventure: false
+
 # Boost Settings
 # ==============
 
@@ -63,6 +70,19 @@ multiplyValue: 5
 #   "forward" - Boosts player in the direction they're looking (default)
 #   "upward"  - Boosts player straight up vertically
 boostDirection: forward
+
+# How many times a player can boost during a single flight
+# Default: 1 (same as before - one boost per flight)
+totalBoosts: 1
+
+# Cooldown in seconds between boosts, only relevant if totalBoosts is greater than 1
+# Default: 0 (no cooldown between boosts)
+boostToBoostCooldown: 0
+
+# Block using firework rockets to boost while flying via spawn elytra
+# Only applies while flying without a real elytra equipped (this plugin's own flight mode)
+# Does NOT affect firework use while wearing a real elytra
+disableFireworksInSpawnElytra: true
 
 # Sound & Feedback
 # ================
