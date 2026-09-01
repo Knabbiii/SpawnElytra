@@ -64,6 +64,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final String boostDirection;
     private final boolean showBoostMessage;
     private final boolean showActivationMessage;
+    private final boolean disableInAdventure;
     private final int totalBoosts;
     private final long boostToBoostCooldownMs;
     private final boolean disableFireworksInSpawnElytra;
@@ -97,6 +98,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 config.getString("boostDirection", "forward"),
                 config.getBoolean("showBoostMessage", true),
                 config.getBoolean("showActivationMessage", true),
+                config.getBoolean("disableInAdventure", false),
                 Math.max(1, config.getInt("totalBoosts", 1)),
                 Math.max(0L, (long) (config.getDouble("boostToBoostCooldown", 0) * 1000)),
                 config.getBoolean("disableFireworksInSpawnElytra", false));
@@ -105,6 +107,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius, boolean boostEnabled,
                                World world, String message, Sound boostSound, String boostDirection,
                                boolean showBoostMessage, boolean showActivationMessage,
+                               boolean disableInAdventure,
                                int totalBoosts, long boostToBoostCooldownMs,
                                boolean disableFireworksInSpawnElytra) {
         this.plugin = plugin;
@@ -118,6 +121,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         this.boostDirection = boostDirection.toLowerCase();
         this.showBoostMessage = showBoostMessage;
         this.showActivationMessage = showActivationMessage;
+        this.disableInAdventure = disableInAdventure;
         this.totalBoosts = totalBoosts;
         this.boostToBoostCooldownMs = boostToBoostCooldownMs;
         this.keyTempElytra = new NamespacedKey(plugin, "temp_elytra");
@@ -131,11 +135,11 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     public void run() {
         //Detect Players near Spawn and allow them to toggle flight
         Bukkit.getOnlinePlayers().forEach(player -> {
-            if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
             UUID playerUUID = player.getUniqueId();
 
-            if (!player.hasPermission("spawnelytra.use")) {
-                // Permission was revoked (e.g. mid-flight) - forcibly strip any flight we granted
+            if (!player.hasPermission("spawnelytra.use") || !isGameModeAllowed(player.getGameMode())) {
+                // Permission was revoked or game mode became disallowed (e.g. mid-flight,
+                // or via a config reload) - forcibly strip any flight we granted
                 if (flying.contains(playerUUID) || managedPlayers.contains(playerUUID) || player.getAllowFlight()) {
                     player.setAllowFlight(false);
                     player.setGliding(false);
@@ -172,9 +176,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     public void onDoubleJump(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
-        if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
-        if (!player.hasPermission("spawnelytra.use")) {
-            // No permission - don't let the native double-jump flight toggle activate
+        if (!player.hasPermission("spawnelytra.use") || !isGameModeAllowed(player.getGameMode())) {
+            // No permission, or game mode not allowed - don't let the native double-jump flight toggle activate
             event.setCancelled(true);
             player.setAllowFlight(false);
             return;
@@ -492,6 +495,23 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     }
 
     @EventHandler
+    public void onGameModeChange(PlayerGameModeChangeEvent event) {
+        Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+
+        if (!flying.contains(playerUUID) || isGameModeAllowed(event.getNewGameMode())) return;
+
+        // Switched into a disallowed game mode while flying via spawn elytra - force landing
+        player.setGliding(false);
+        player.setAllowFlight(false);
+        resetBoosts(playerUUID);
+        flying.remove(playerUUID);
+        managedPlayers.remove(playerUUID);
+        saveData();
+        restoreChestplateIfPresent(player);
+    }
+
+    @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerUUID = event.getPlayer().getUniqueId();
 
@@ -540,6 +560,14 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }
 
         return spawnLocation.distance(playerLocation) <= spawnRadius;
+    }
+
+    private boolean isGameModeAllowed(GameMode gameMode) {
+        return switch (gameMode) {
+            case SURVIVAL -> true;
+            case ADVENTURE -> !disableInAdventure;
+            default -> false;
+        };
     }
 
     private boolean isWearingRealElytra(Player player) {
