@@ -749,12 +749,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     private void drawRectangleOutline(Player player, Particle.DustOptions options, double minX, double maxX, double minZ, double maxZ, double y) {
         for (double x = minX; x <= maxX; x += 1.0) {
-            player.spawnParticle(Particle.DUST, new Location(world, x, y, minZ), 1, 0, 0, 0, 0, options);
-            player.spawnParticle(Particle.DUST, new Location(world, x, y, maxZ), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, x, y, minZ), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, x, y, maxZ), 1, 0, 0, 0, 0, options);
         }
         for (double z = minZ; z <= maxZ; z += 1.0) {
-            player.spawnParticle(Particle.DUST, new Location(world, minX, y, z), 1, 0, 0, 0, 0, options);
-            player.spawnParticle(Particle.DUST, new Location(world, maxX, y, z), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, minX, y, z), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, maxX, y, z), 1, 0, 0, 0, 0, options);
         }
     }
 
@@ -764,7 +764,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             double rad = Math.toRadians(angle);
             double x = center.getX() + spawnRadius * Math.cos(rad);
             double z = center.getZ() + spawnRadius * Math.sin(rad);
-            player.spawnParticle(Particle.DUST, new Location(world, x, y, z), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, x, y, z), 1, 0, 0, 0, 0, options);
         }
     }
 
@@ -775,7 +775,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         double[][] corners = {{rectMinX, rectMinZ}, {rectMinX, rectMaxZ}, {rectMaxX, rectMinZ}, {rectMaxX, rectMaxZ}};
         for (double[] corner : corners) {
             for (double y = rectMinY; y <= rectMaxY; y += 1.0) {
-                player.spawnParticle(Particle.DUST, new Location(world, corner[0], y, corner[1]), 1, 0, 0, 0, 0, options);
+                player.spawnParticle(Particle.REDSTONE, new Location(world, corner[0], y, corner[1]), 1, 0, 0, 0, 0, options);
             }
         }
     }
@@ -791,9 +791,9 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             double rad = Math.toRadians(angle);
             double cos = Math.cos(rad), sin = Math.sin(rad);
 
-            player.spawnParticle(Particle.DUST, new Location(world, cx + r * cos, cy, cz + r * sin), 1, 0, 0, 0, 0, options);
-            player.spawnParticle(Particle.DUST, new Location(world, cx + r * cos, cy + r * sin, cz), 1, 0, 0, 0, 0, options);
-            player.spawnParticle(Particle.DUST, new Location(world, cx, cy + r * sin, cz + r * cos), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, cx + r * cos, cy, cz + r * sin), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, cx + r * cos, cy + r * sin, cz), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.REDSTONE, new Location(world, cx, cy + r * sin, cz + r * cos), 1, 0, 0, 0, 0, options);
         }
     }
 
