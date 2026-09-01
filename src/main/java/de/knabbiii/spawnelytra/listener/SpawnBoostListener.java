@@ -2,6 +2,7 @@ package de.knabbiii.spawnelytra.listener;
 
 import de.knabbiii.spawnelytra.SpawnElytra;
 import de.knabbiii.spawnelytra.data.DataManager;
+import de.knabbiii.spawnelytra.util.BedrockSupport;
 import de.knabbiii.spawnelytra.util.UpdateChecker;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -117,6 +118,20 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Bukkit.getOnlinePlayers().forEach(player -> {
             if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
             UUID playerUUID = player.getUniqueId();
+
+            if (!player.hasPermission("spawnelytra.use")) {
+                // Permission was revoked (e.g. mid-flight) - forcibly strip any flight we granted
+                if (flying.contains(playerUUID) || managedPlayers.contains(playerUUID) || player.getAllowFlight()) {
+                    player.setAllowFlight(false);
+                    player.setGliding(false);
+                    flying.remove(playerUUID);
+                    managedPlayers.remove(playerUUID);
+                    boosted.remove(playerUUID);
+                    saveData();
+                }
+                return;
+            }
+
             boolean inSpawnRadius = isInSpawnRadius(player);
             boolean isCurrentlyFlying = flying.contains(playerUUID);
 
@@ -142,6 +157,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
         if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+        if (!player.hasPermission("spawnelytra.use")) {
+            // No permission - don't let the native double-jump flight toggle activate
+            event.setCancelled(true);
+            player.setAllowFlight(false);
+            return;
+        }
         if (!isInSpawnRadius(player)) return;
 
         // If player is already flying or gliding, just cancel - don't process again
@@ -179,7 +200,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }, 5);
 
 
-        if (showActivationMessage && boostEnabled) {
+        if (showActivationMessage && boostEnabled && player.hasPermission("spawnelytra.useboost")) {
             if (isBedrock) {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
                     new ComponentBuilder("§aPress SNEAK to boost yourself!").create());
@@ -361,7 +382,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
 
-        if (isBedrockPlayer(player)) {
+        if (BedrockSupport.isBedrockPlayer(plugin, player)) {
             bedrockPlayers.add(playerUUID);
         }
 
@@ -391,6 +412,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         // Clean up tracking for this player
         bedrockPlayers.remove(playerUUID);
+        BedrockSupport.forget(playerUUID);
     }
 
     @EventHandler
@@ -508,18 +530,6 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             plugin.getLogger().warning("Failed to deserialize chestplate backup: " + e.getMessage());
             return null;
         }
-    }
-
-    private boolean isBedrockPlayer(Player player) {
-        try {
-            Class<?> floodgateApi = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
-            Object api = floodgateApi.getMethod("getInstance").invoke(null);
-            return (boolean) floodgateApi.getMethod("isFloodgatePlayer", java.util.UUID.class)
-                    .invoke(api, player.getUniqueId());
-        } catch (Exception ignored) {}
-
-        String uuid = player.getUniqueId().toString();
-        return uuid.startsWith("00000000-0000-0000");
     }
 
     public void loadData() {
