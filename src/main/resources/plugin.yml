@@ -5,7 +5,7 @@ author: Knabbiii
 name: SpawnElytra
 description: "Enable elytra-like flight mechanics at spawn without requiring elytra wings. Double-jump to fly and boost with F key (Java) or Sneak (Bedrock)! Built with Java 21 for optimal performance. Geyser/Bedrock compatible! Paper servers: automatic advancement suppression for Bedrock players."
 website: https://github.com/Knabbiii/SpawnElytra
-softdepend: [floodgate]
+softdepend: [floodgate, Geyser-Spigot]
 
 commands:
   spawnelytra:
