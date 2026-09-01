@@ -2,6 +2,7 @@ package de.knabbiii.spawnelytra.listener;
 
 import de.knabbiii.spawnelytra.SpawnElytra;
 import de.knabbiii.spawnelytra.data.DataManager;
+import de.knabbiii.spawnelytra.util.BedrockSupport;
 import de.knabbiii.spawnelytra.util.UpdateChecker;
 import net.md_5.bungee.api.ChatMessageType;
 import net.md_5.bungee.api.chat.BaseComponent;
@@ -24,10 +25,17 @@ import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.*;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
+import org.bukkit.util.io.BukkitObjectInputStream;
+import org.bukkit.util.io.BukkitObjectOutputStream;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.*;
 
 public class SpawnBoostListener extends BukkitRunnable implements Listener {
@@ -43,8 +51,9 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final Map<UUID, Long> lastBoostTime = new HashMap<>();
     private final Set<UUID> gracePeriod = new HashSet<>();
     private final Set<UUID> managedPlayers = new HashSet<>();
-    private final Map<UUID, ItemStack> originalChestplates = new HashMap<>();
     private final Set<UUID> bedrockPlayers = new HashSet<>();
+    private final NamespacedKey keyTempElytra;
+    private final NamespacedKey keyStoredChestplate;
     private volatile boolean saveScheduled = false; // Track if save is already scheduled
     private boolean updateNotified = false; // Only notify the first op after each restart
     private final String message;
@@ -54,6 +63,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final boolean showActivationMessage;
     private final int totalBoosts;
     private final long boostToBoostCooldownMs;
+    private final boolean disableFireworksInSpawnElytra;
 
     public static SpawnBoostListener create(Plugin plugin) {
         var config = plugin.getConfig();
@@ -85,13 +95,15 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 config.getBoolean("showBoostMessage", true),
                 config.getBoolean("showActivationMessage", true),
                 Math.max(1, config.getInt("totalBoosts", 1)),
-                Math.max(0L, (long) (config.getDouble("boostToBoostCooldown", 0) * 1000)));
+                Math.max(0L, (long) (config.getDouble("boostToBoostCooldown", 0) * 1000)),
+                config.getBoolean("disableFireworksInSpawnElytra", false));
     }
 
     private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius, boolean boostEnabled,
                                World world, String message, Sound boostSound, String boostDirection,
                                boolean showBoostMessage, boolean showActivationMessage,
-                               int totalBoosts, long boostToBoostCooldownMs) {
+                               int totalBoosts, long boostToBoostCooldownMs,
+                               boolean disableFireworksInSpawnElytra) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
@@ -105,6 +117,9 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         this.showActivationMessage = showActivationMessage;
         this.totalBoosts = totalBoosts;
         this.boostToBoostCooldownMs = boostToBoostCooldownMs;
+        this.keyTempElytra = new NamespacedKey(plugin, "temp_elytra");
+        this.keyStoredChestplate = new NamespacedKey(plugin, "stored_chestplate");
+        this.disableFireworksInSpawnElytra = disableFireworksInSpawnElytra;
 
         this.runTaskTimer(this.plugin, 0, 5);
     }
@@ -115,6 +130,20 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Bukkit.getOnlinePlayers().forEach(player -> {
             if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
             UUID playerUUID = player.getUniqueId();
+
+            if (!player.hasPermission("spawnelytra.use")) {
+                // Permission was revoked (e.g. mid-flight) - forcibly strip any flight we granted
+                if (flying.contains(playerUUID) || managedPlayers.contains(playerUUID) || player.getAllowFlight()) {
+                    player.setAllowFlight(false);
+                    player.setGliding(false);
+                    flying.remove(playerUUID);
+                    managedPlayers.remove(playerUUID);
+                    resetBoosts(playerUUID);
+                    saveData();
+                }
+                return;
+            }
+
             boolean inSpawnRadius = isInSpawnRadius(player);
             boolean isCurrentlyFlying = flying.contains(playerUUID);
 
@@ -140,6 +169,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
         if (player.getGameMode() != GameMode.SURVIVAL && player.getGameMode() != GameMode.ADVENTURE) return;
+        if (!player.hasPermission("spawnelytra.use")) {
+            // No permission - don't let the native double-jump flight toggle activate
+            event.setCancelled(true);
+            player.setAllowFlight(false);
+            return;
+        }
         if (!isInSpawnRadius(player)) return;
 
         // If player is already flying or gliding, just cancel - don't process again
@@ -152,29 +187,22 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         player.setAllowFlight(false);
 
         boolean isBedrock = bedrockPlayers.contains(player.getUniqueId());
-        
+
         // Bedrock: Equip virtual elytra
         if (isBedrock) {
             ItemStack currentChestplate = player.getInventory().getChestplate();
-            if (currentChestplate == null || currentChestplate.getType() != Material.ELYTRA) {
-                originalChestplates.put(playerUUID, currentChestplate);
-                ItemStack virtualElytra = new ItemStack(Material.ELYTRA);
-                ItemMeta meta = virtualElytra.getItemMeta();
-                if (meta != null) {
-                    meta.setUnbreakable(true);
-                    meta.setDisplayName("§7Spawn Elytra");
-                    virtualElytra.setItemMeta(meta);
-                }
-                player.getInventory().setChestplate(virtualElytra);
+            if (!isTempElytra(currentChestplate)) {
+                backupChestplate(player, currentChestplate);
+                player.getInventory().setChestplate(createTempElytra());
             }
         }
-        
+
         // Immediately add to flying list BEFORE starting glide to block rapid re-triggers
         flying.add(playerUUID);
         saveData();
         managedPlayers.remove(playerUUID); // No longer managed - now in flight mode
         gracePeriod.add(playerUUID);
-        
+
         // Now set flight states
         player.setGliding(true);
 
@@ -184,7 +212,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }, 5);
 
 
-        if (showActivationMessage && boostEnabled) {
+        if (showActivationMessage && boostEnabled && player.hasPermission("spawnelytra.useboost")) {
             if (isBedrock) {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
                     new ComponentBuilder("§aPress SNEAK to boost yourself!").create());
@@ -299,11 +327,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 player.setAllowFlight(false);
                 player.setGliding(false);
                 resetBoosts(playerUUID);
-                
-                // Restore original chestplate for Bedrock
-                if (originalChestplates.containsKey(playerUUID)) {
-                    player.getInventory().setChestplate(originalChestplates.remove(playerUUID));
-                }
+                restoreChestplateIfPresent(player);
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     flying.remove(playerUUID);
@@ -325,14 +349,28 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             resetBoosts(playerUUID);
             managedPlayers.remove(playerUUID);
             saveData();
-            // Restore chestplate for Bedrock
-            if (originalChestplates.containsKey(playerUUID)) {
-                player.getInventory().setChestplate(originalChestplates.remove(playerUUID));
-            }
+            restoreChestplateIfPresent(player);
         } else if (managedPlayers.contains(playerUUID)) {
             // Player was managed and changed worlds - remove flight and clean up
             player.setAllowFlight(false);
             managedPlayers.remove(playerUUID);
+        }
+    }
+
+    @EventHandler
+    public void onFireworkUseAttempt(PlayerInteractEvent event) {
+        if (!disableFireworksInSpawnElytra) return;
+
+        Player player = event.getPlayer();
+        if (!flying.contains(player.getUniqueId())) return;
+
+        ItemStack item = event.getItem();
+        if (item == null || item.getType() != Material.FIREWORK_ROCKET) return;
+
+        // Only block if the player isn't actually wearing a real elytra -
+        // firework use with a genuine elytra is unrelated to spawn elytra flight.
+        if (!isWearingRealElytra(player)) {
+            event.setCancelled(true);
         }
     }
 
@@ -390,7 +428,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Player player = event.getPlayer();
         UUID playerUUID = player.getUniqueId();
 
-        if (isBedrockPlayer(player)) {
+        if (BedrockSupport.isBedrockPlayer(plugin, player)) {
             bedrockPlayers.add(playerUUID);
         }
 
@@ -420,6 +458,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         // Clean up tracking for this player
         bedrockPlayers.remove(playerUUID);
+        BedrockSupport.forget(playerUUID);
     }
 
     @EventHandler
@@ -430,22 +469,14 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         // Prevent virtual elytra from dropping on death
         if (flying.contains(playerUUID) && bedrockPlayers.contains(playerUUID)) {
             // Remove virtual elytra from drops
-            event.getDrops().removeIf(item -> {
-                if (item.getType() == Material.ELYTRA) {
-                    ItemMeta meta = item.getItemMeta();
-                    return meta != null && "§7Spawn Elytra".equals(meta.getDisplayName());
-                }
-                return false;
-            });
-            
+            event.getDrops().removeIf(this::isTempElytra);
+
             // Restore original chestplate to drops if there was one
-            if (originalChestplates.containsKey(playerUUID)) {
-                ItemStack original = originalChestplates.remove(playerUUID);
-                if (original != null) {
-                    event.getDrops().add(original);
-                }
+            ItemStack original = takeStoredChestplate(player);
+            if (original != null) {
+                event.getDrops().add(original);
             }
-            
+
             // Clean up flying state
             flying.remove(playerUUID);
             resetBoosts(playerUUID);
@@ -471,6 +502,11 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         return spawnLocation.distance(playerLocation) <= spawnRadius;
     }
 
+    private boolean isWearingRealElytra(Player player) {
+        ItemStack chestplate = player.getInventory().getChestplate();
+        return chestplate != null && chestplate.getType() == Material.ELYTRA && !isTempElytra(chestplate);
+    }
+
     private boolean isChestSlotItem(Material material) {
         return material == Material.ELYTRA || material.name().endsWith("_CHESTPLATE");
     }
@@ -486,16 +522,70 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         lastBoostTime.remove(playerUUID);
     }
 
-    private boolean isBedrockPlayer(Player player) {
-        try {
-            Class<?> floodgateApi = Class.forName("org.geysermc.floodgate.api.FloodgateApi");
-            Object api = floodgateApi.getMethod("getInstance").invoke(null);
-            return (boolean) floodgateApi.getMethod("isFloodgatePlayer", java.util.UUID.class)
-                    .invoke(api, player.getUniqueId());
-        } catch (Exception ignored) {}
+    private boolean isTempElytra(ItemStack item) {
+        if (item == null || item.getType() != Material.ELYTRA || !item.hasItemMeta()) return false;
+        return item.getItemMeta().getPersistentDataContainer().has(keyTempElytra, PersistentDataType.BYTE);
+    }
 
-        String uuid = player.getUniqueId().toString();
-        return uuid.startsWith("00000000-0000-0000");
+    private ItemStack createTempElytra() {
+        ItemStack virtualElytra = new ItemStack(Material.ELYTRA);
+        ItemMeta meta = virtualElytra.getItemMeta();
+        if (meta != null) {
+            meta.setUnbreakable(true);
+            meta.setDisplayName("§7Spawn Elytra");
+            meta.getPersistentDataContainer().set(keyTempElytra, PersistentDataType.BYTE, (byte) 1);
+            virtualElytra.setItemMeta(meta);
+        }
+        return virtualElytra;
+    }
+
+    /**
+     * Stores the player's real chestplate (or the absence of one) on their own
+     * PersistentDataContainer, so it survives a server restart without a separate data file.
+     */
+    private void backupChestplate(Player player, ItemStack chestplate) {
+        PersistentDataContainer pdc = player.getPersistentDataContainer();
+        byte[] data = chestplate == null ? new byte[0] : serializeItemStack(chestplate);
+        pdc.set(keyStoredChestplate, PersistentDataType.BYTE_ARRAY, data);
+    }
+
+    private void restoreChestplateIfPresent(Player player) {
+        player.getInventory().setChestplate(takeStoredChestplate(player));
+    }
+
+    /**
+     * Removes and returns the backed-up chestplate from the player's PDC, or null
+     * if none was stored (or the player had no chestplate equipped before).
+     */
+    private ItemStack takeStoredChestplate(Player player) {
+        PersistentDataContainer pdc = player.getPersistentDataContainer();
+        if (!pdc.has(keyStoredChestplate, PersistentDataType.BYTE_ARRAY)) return null;
+
+        byte[] data = pdc.get(keyStoredChestplate, PersistentDataType.BYTE_ARRAY);
+        pdc.remove(keyStoredChestplate);
+        return (data == null || data.length == 0) ? null : deserializeItemStack(data);
+    }
+
+    private byte[] serializeItemStack(ItemStack item) {
+        try {
+            ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+            BukkitObjectOutputStream dataOutput = new BukkitObjectOutputStream(outputStream);
+            dataOutput.writeObject(item);
+            dataOutput.close();
+            return outputStream.toByteArray();
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to serialize chestplate backup: " + e.getMessage());
+            return new byte[0];
+        }
+    }
+
+    private ItemStack deserializeItemStack(byte[] data) {
+        try (BukkitObjectInputStream dataInput = new BukkitObjectInputStream(new ByteArrayInputStream(data))) {
+            return (ItemStack) dataInput.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            plugin.getLogger().warning("Failed to deserialize chestplate backup: " + e.getMessage());
+            return null;
+        }
     }
 
     public void loadData() {
@@ -504,12 +594,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         flying.addAll(data.flyingPlayers);
         boostCount.putAll(data.boostCounts);
-        originalChestplates.putAll(data.originalChestplates);
 
         if (SpawnElytra.isDebugMode()) {
             plugin.getLogger().info("[debug] Loaded " + data.flyingPlayers.size() + " flying, "
-                    + data.boostCounts.size() + " with boosts used, "
-                    + data.originalChestplates.size() + " chestplates");
+                    + data.boostCounts.size() + " with boosts used");
             flying.forEach(uuid -> plugin.getLogger().info("[debug] Flying: " + uuid));
         }
     }
@@ -527,11 +615,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             List<UUID> flyingCopy = new ArrayList<>(flying);
             Map<UUID, Integer> boostCountCopy = new HashMap<>(boostCount);
-            Map<UUID, ItemStack> chestplatesCopy = new HashMap<>(originalChestplates);
 
             // Save asynchronously to prevent server lag
             Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
-                DataManager.getInstance().saveFlyingData(flyingCopy, boostCountCopy, chestplatesCopy);
+                DataManager.getInstance().saveFlyingData(flyingCopy, boostCountCopy);
             });
 
             saveScheduled = false;
@@ -540,10 +627,6 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     public void saveDataSync() {
         // Synchronous save for shutdown
-        DataManager.getInstance().saveFlyingData(
-                new ArrayList<>(flying),
-                new HashMap<>(boostCount),
-                new HashMap<>(originalChestplates)
-        );
+        DataManager.getInstance().saveFlyingData(new ArrayList<>(flying), new HashMap<>(boostCount));
     }
 }

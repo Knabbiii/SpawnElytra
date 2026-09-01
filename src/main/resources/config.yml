@@ -55,6 +55,11 @@ totalBoosts: 1
 # Default: 0 (no cooldown between boosts)
 boostToBoostCooldown: 0
 
+# Block using firework rockets to boost while flying via spawn elytra
+# Only applies while flying without a real elytra equipped (this plugin's own flight mode)
+# Does NOT affect firework use while wearing a real elytra
+disableFireworksInSpawnElytra: true
+
 # Sound & Feedback
 # ================
 
