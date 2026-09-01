@@ -60,6 +60,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final String boostDirection;
     private final boolean showBoostMessage;
     private final boolean showActivationMessage;
+    private final boolean disableFireworksInSpawnElytra;
 
     public static SpawnBoostListener create(Plugin plugin) {
         var config = plugin.getConfig();
@@ -89,12 +90,14 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 sound,
                 config.getString("boostDirection", "forward"),
                 config.getBoolean("showBoostMessage", true),
-                config.getBoolean("showActivationMessage", true));
+                config.getBoolean("showActivationMessage", true),
+                config.getBoolean("disableFireworksInSpawnElytra", false));
     }
 
     private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius, boolean boostEnabled,
                                World world, String message, Sound boostSound, String boostDirection,
-                               boolean showBoostMessage, boolean showActivationMessage) {
+                               boolean showBoostMessage, boolean showActivationMessage,
+                               boolean disableFireworksInSpawnElytra) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
@@ -108,6 +111,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         this.showActivationMessage = showActivationMessage;
         this.keyTempElytra = new NamespacedKey(plugin, "temp_elytra");
         this.keyStoredChestplate = new NamespacedKey(plugin, "stored_chestplate");
+        this.disableFireworksInSpawnElytra = disableFireworksInSpawnElytra;
 
         this.runTaskTimer(this.plugin, 0, 5);
     }
@@ -328,6 +332,23 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }
     }
 
+    @EventHandler
+    public void onFireworkUseAttempt(PlayerInteractEvent event) {
+        if (!disableFireworksInSpawnElytra) return;
+
+        Player player = event.getPlayer();
+        if (!flying.contains(player.getUniqueId())) return;
+
+        ItemStack item = event.getItem();
+        if (item == null || item.getType() != Material.FIREWORK_ROCKET) return;
+
+        // Only block if the player isn't actually wearing a real elytra -
+        // firework use with a genuine elytra is unrelated to spawn elytra flight.
+        if (!isWearingRealElytra(player)) {
+            event.setCancelled(true);
+        }
+    }
+
     @EventHandler(priority = EventPriority.HIGHEST)
     public void onPlayerInteract(PlayerInteractEvent event) {
         Player player = event.getPlayer();
@@ -454,6 +475,11 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         }
 
         return spawnLocation.distance(playerLocation) <= spawnRadius;
+    }
+
+    private boolean isWearingRealElytra(Player player) {
+        ItemStack chestplate = player.getInventory().getChestplate();
+        return chestplate != null && chestplate.getType() == Material.ELYTRA && !isTempElytra(chestplate);
     }
 
     private boolean isChestSlotItem(Material material) {
