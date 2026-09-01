@@ -40,6 +40,8 @@ import java.util.*;
 
 public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
+    private static final long BOOST_MESSAGE_HOLD_MS = 2000L;
+
     private final Plugin plugin;
     private final int multiplyValue;
     private final int spawnRadius;
@@ -49,6 +51,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final Set<UUID> flying = new HashSet<>();
     private final Map<UUID, Integer> boostCount = new HashMap<>();
     private final Map<UUID, Long> lastBoostTime = new HashMap<>();
+    private final Set<UUID> boostReadyAnnounced = new HashSet<>();
     private final Set<UUID> gracePeriod = new HashSet<>();
     private final Set<UUID> managedPlayers = new HashSet<>();
     private final Set<UUID> bedrockPlayers = new HashSet<>();
@@ -150,6 +153,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             if (isCurrentlyFlying || player.isGliding()) {
                 // Keep allowFlight disabled while flying/gliding to prevent re-triggering
                 player.setAllowFlight(false);
+                showBoostCooldownIfActive(player, playerUUID);
             } else if (inSpawnRadius) {
                 // Player is in spawn radius - give them flight if they don't have it
                 if (!player.getAllowFlight()) {
@@ -279,11 +283,46 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         return true;
     }
 
+    /**
+     * Shows a live actionbar countdown until the player's next boost is available.
+     * Only meaningful when totalBoosts > 1 with a cooldown configured - see canBoost().
+     */
+    private void showBoostCooldownIfActive(Player player, UUID playerUUID) {
+        if (boostToBoostCooldownMs <= 0 || totalBoosts <= 1) return;
+        if (!player.hasPermission("spawnelytra.useboost")) return;
+
+        int used = boostCount.getOrDefault(playerUUID, 0);
+        if (used == 0 || used >= totalBoosts) return; // no boost taken yet, or none left to wait for
+
+        long elapsedSinceBoost = System.currentTimeMillis() - lastBoostTime.getOrDefault(playerUUID, 0L);
+        if (elapsedSinceBoost < BOOST_MESSAGE_HOLD_MS) return; // let "Boost activated!" stay visible a bit first
+
+        long remainingMs = boostToBoostCooldownMs - elapsedSinceBoost;
+
+        String text;
+        if (remainingMs > 0) {
+            long remainingSeconds = (remainingMs + 999) / 1000; // round up to the next full second
+            text = "§7Next boost in " + remainingSeconds + "s";
+        } else if (boostReadyAnnounced.add(playerUUID)) {
+            // Cooldown just expired - show this once, not on every tick afterwards
+            text = "§aYou can boost now!";
+        } else {
+            return;
+        }
+
+        try {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, new ComponentBuilder(text).create());
+        } catch (NoClassDefFoundError | NoSuchMethodError ignored) {
+            // No BungeeChat API available - skip rather than spam the chat every tick
+        }
+    }
+
     private void applyBoost(Player player) {
         UUID playerUUID = player.getUniqueId();
         int used = boostCount.getOrDefault(playerUUID, 0) + 1;
         boostCount.put(playerUUID, used);
         lastBoostTime.put(playerUUID, System.currentTimeMillis());
+        boostReadyAnnounced.remove(playerUUID);
         saveData();
 
         Vector velocity;
@@ -459,6 +498,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         // Clean up tracking for this player
         bedrockPlayers.remove(playerUUID);
         BedrockSupport.forget(playerUUID);
+        boostReadyAnnounced.remove(playerUUID);
     }
 
     @EventHandler
@@ -520,6 +560,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private void resetBoosts(UUID playerUUID) {
         boostCount.remove(playerUUID);
         lastBoostTime.remove(playerUUID);
+        boostReadyAnnounced.remove(playerUUID);
     }
 
     private boolean isTempElytra(ItemStack item) {
