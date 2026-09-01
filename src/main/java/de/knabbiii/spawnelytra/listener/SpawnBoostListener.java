@@ -333,14 +333,11 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     }
 
     @EventHandler
-    public void onFireworkUse(PlayerInteractEvent event) {
+    public void onFireworkUseAttempt(PlayerInteractEvent event) {
         if (!disableFireworksInSpawnElytra) return;
 
         Player player = event.getPlayer();
         if (!flying.contains(player.getUniqueId())) return;
-
-        Action action = event.getAction();
-        if (action != Action.RIGHT_CLICK_AIR && action != Action.RIGHT_CLICK_BLOCK) return;
 
         ItemStack item = event.getItem();
         if (item == null || item.getType() != Material.FIREWORK_ROCKET) return;
