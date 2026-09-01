@@ -11,7 +11,7 @@ commands:
   spawnelytra:
     description: Main SpawnElytra command
     aliases: [se, selytra]
-    usage: /<command> [reload|info]
+    usage: /<command> [reload|info|visualize]
 
 permissions:
   spawnelytra.use:

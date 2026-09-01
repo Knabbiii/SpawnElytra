@@ -29,6 +29,7 @@ import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import org.bukkit.util.io.BukkitObjectInputStream;
 import org.bukkit.util.io.BukkitObjectOutputStream;
@@ -60,6 +61,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final Set<UUID> bedrockPlayers = new HashSet<>();
     private final NamespacedKey keyTempElytra;
     private final NamespacedKey keyStoredChestplate;
+    private final Map<UUID, BukkitTask> visualizationTasks = new HashMap<>();
     private volatile boolean saveScheduled = false; // Track if save is already scheduled
     private boolean updateNotified = false; // Only notify the first op after each restart
     private final String message;
@@ -687,6 +689,119 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             plugin.getLogger().warning("Failed to deserialize chestplate backup: " + e.getMessage());
             return null;
         }
+    }
+
+    /**
+     * Shows a purple particle outline of the configured spawn area to one player
+     * for the given duration. Only visible to that player, not broadcast to others.
+     */
+    public void visualizeArea(Player player, int seconds) {
+        UUID playerUUID = player.getUniqueId();
+
+        BukkitTask existing = visualizationTasks.remove(playerUUID);
+        if (existing != null) existing.cancel();
+
+        int maxTicks = seconds * 20;
+        BukkitTask task = new BukkitRunnable() {
+            private int ticksElapsed = 0;
+
+            @Override
+            public void run() {
+                if (ticksElapsed >= maxTicks || !player.isOnline()) {
+                    visualizationTasks.remove(playerUUID);
+                    this.cancel();
+                    return;
+                }
+
+                drawAreaOutline(player);
+                ticksElapsed += 10;
+            }
+        }.runTaskTimer(plugin, 0L, 10L);
+
+        visualizationTasks.put(playerUUID, task);
+    }
+
+    /**
+     * Mirrors the actual area check's dimensionality: when ignoreYInSpawnRadius is on,
+     * the check is 2D (X/Z only), so a flat outline at the player's height is accurate.
+     * When it's off, the check is genuinely 3D (a sphere for the radius, a full box for
+     * the rectangle), so the outline is drawn as a wireframe sphere/box instead.
+     */
+    private void drawAreaOutline(Player player) {
+        if (!player.getWorld().equals(world)) return;
+
+        Particle.DustOptions purple = new Particle.DustOptions(Color.fromRGB(170, 0, 255), 1.2f);
+
+        if (useRectangularArea) {
+            if (ignoreYInSpawnRadius) {
+                drawRectangleOutline(player, purple, rectMinX, rectMaxX, rectMinZ, rectMaxZ, player.getLocation().getY());
+            } else {
+                drawBoxWireframe(player, purple);
+            }
+        } else {
+            if (ignoreYInSpawnRadius) {
+                drawCircleOutline(player, purple, player.getLocation().getY());
+            } else {
+                drawSphereWireframe(player, purple);
+            }
+        }
+    }
+
+    private void drawRectangleOutline(Player player, Particle.DustOptions options, double minX, double maxX, double minZ, double maxZ, double y) {
+        for (double x = minX; x <= maxX; x += 1.0) {
+            player.spawnParticle(Particle.DUST, new Location(world, x, y, minZ), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.DUST, new Location(world, x, y, maxZ), 1, 0, 0, 0, 0, options);
+        }
+        for (double z = minZ; z <= maxZ; z += 1.0) {
+            player.spawnParticle(Particle.DUST, new Location(world, minX, y, z), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.DUST, new Location(world, maxX, y, z), 1, 0, 0, 0, 0, options);
+        }
+    }
+
+    private void drawCircleOutline(Player player, Particle.DustOptions options, double y) {
+        Location center = world.getSpawnLocation();
+        for (double angle = 0; angle < 360; angle += 4) {
+            double rad = Math.toRadians(angle);
+            double x = center.getX() + spawnRadius * Math.cos(rad);
+            double z = center.getZ() + spawnRadius * Math.sin(rad);
+            player.spawnParticle(Particle.DUST, new Location(world, x, y, z), 1, 0, 0, 0, 0, options);
+        }
+    }
+
+    private void drawBoxWireframe(Player player, Particle.DustOptions options) {
+        drawRectangleOutline(player, options, rectMinX, rectMaxX, rectMinZ, rectMaxZ, rectMinY);
+        drawRectangleOutline(player, options, rectMinX, rectMaxX, rectMinZ, rectMaxZ, rectMaxY);
+
+        double[][] corners = {{rectMinX, rectMinZ}, {rectMinX, rectMaxZ}, {rectMaxX, rectMinZ}, {rectMaxX, rectMaxZ}};
+        for (double[] corner : corners) {
+            for (double y = rectMinY; y <= rectMaxY; y += 1.0) {
+                player.spawnParticle(Particle.DUST, new Location(world, corner[0], y, corner[1]), 1, 0, 0, 0, 0, options);
+            }
+        }
+    }
+
+    private void drawSphereWireframe(Player player, Particle.DustOptions options) {
+        // Three orthogonal great circles (equator + two meridians) give a recognizable,
+        // lightweight sphere wireframe without needing a dense latitude/longitude grid.
+        Location center = world.getSpawnLocation();
+        double cx = center.getX(), cy = center.getY(), cz = center.getZ();
+        double r = spawnRadius;
+
+        for (double angle = 0; angle < 360; angle += 6) {
+            double rad = Math.toRadians(angle);
+            double cos = Math.cos(rad), sin = Math.sin(rad);
+
+            player.spawnParticle(Particle.DUST, new Location(world, cx + r * cos, cy, cz + r * sin), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.DUST, new Location(world, cx + r * cos, cy + r * sin, cz), 1, 0, 0, 0, 0, options);
+            player.spawnParticle(Particle.DUST, new Location(world, cx, cy + r * sin, cz + r * cos), 1, 0, 0, 0, 0, options);
+        }
+    }
+
+    @Override
+    public void cancel() {
+        super.cancel();
+        visualizationTasks.values().forEach(BukkitTask::cancel);
+        visualizationTasks.clear();
     }
 
     public void loadData() {
