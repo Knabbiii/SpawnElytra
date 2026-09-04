@@ -1,139 +1,106 @@
 # ===========================================
-# SpawnElytra v2.1 - Enhanced Configuration
+# SpawnElytra - Configuration
 # ===========================================
-# Plugin by Knabbiii - Enhanced with features inspired by blax-k
-# 
-# This plugin allows players to use elytra-like flight mechanics at spawn
-# without requiring actual elytra wings. Players double-jump to activate flight.
+# Plugin by Knabbiii
+#
+# Players double-jump near spawn to fly like with an elytra, without needing
+# actual elytra wings, then press F (Java) or Sneak (Bedrock) to boost.
 
-# Core Settings
-# =============
+# Quick Start
+# ===========
+# The essentials most servers only need to touch once.
 
-# World where the elytra feature is enabled
-# Must be an exact world name (case-sensitive)
-# Example: "world", "spawn", "lobby"
+# World where the elytra feature is enabled (exact name, case-sensitive)
 world: world
 
-# Radius around spawn where players can activate elytra flight
-# Measured in blocks from the world spawn point (the exact coordinates where 
-# players spawn when they first join the server or use /spawn command)
-# The spawn point is determined by the world's spawn location, which can be 
-# set using /setworldspawn command
-# Recommended: 50-200 blocks depending on your spawn area size
+# Radius in blocks around the spawn point where flight can be activated
+# Recommended: 25-200 depending on your spawn area size
 spawnRadius: 50
 
-# Ignore Y coordinate when checking the spawn area
-# Applies to both spawnAreaMode values below
-# When true: Only horizontal position (X/Z) is checked, so players above/below the area still count
-# When false: Full 3D check is used (X/Y/Z)
+# Enable/disable the boost feature (pressing F / Sneak while flying)
+boostEnabled: true
+
+# Boost strength - higher = stronger. Recommended: 2-8 (values above 10 may feel too strong)
+multiplyValue: 5
+
+# Boost direction:
+#   "forward"    - where the player is looking
+#   "upward"     - straight up
+boostDirection: forward
+
+# Message shown when flight activates - %key% becomes the boost key hint, & for color codes
+message: "Press %key% to boost yourself."
+
+
+# Boost Limits
+# ================
+
+# How many times a player can boost during a single flight (default: 1)
+totalBoosts: 1
+
+# Cooldown in seconds between boosts, only relevant if totalBoosts is greater than 1
+boostToBoostCooldown: 0
+
+# Block using firework rockets to boost while flying via spawn elytra (this plugin's own
+# flight mode). Does NOT affect firework use while wearing a real elytra.
+disableFireworksInSpawnElytra: true
+
+
+# Sound & Messages
+# ================
+
+# Sound played on boost - any Bukkit Sound enum value, e.g. ENTITY_FIREWORK_ROCKET_BLAST,
+# ITEM_ELYTRA_FLYING, ENTITY_ENDER_DRAGON_FLAP (full list: hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html)
+boostSound: ENTITY_BAT_TAKEOFF
+
+# Show "Boost activated!" in the action bar when boosting
+showBoostMessage: true
+
+# Show the message above (with the boost key hint) when flight activates
+showActivationMessage: true
+
+
+# ==================
+# Advanced Settings 
+# ==================
+
+# Spawn Area Shape
+# ================
+
+# Ignore Y (height) when checking the spawn area - players above/below still count
 ignoreYInSpawnRadius: false
 
-# Spawn area shape
-# Options:
-#   "circle"    - Use spawnRadius around the world spawn point (default)
-#   "rectangle" - Use a fixed box defined by rectangularArea below, ignores spawnRadius
+# Area shape:
+#   "circle"    - spawnRadius around the center point
+#   "rectangle" - a box: a custom one if set up below, otherwise a square/cube
+#                 with side length 2x spawnRadius
 spawnAreaMode: circle
 
-# Corners of the box used when spawnAreaMode is "rectangle"
-# Any two opposite corners work - the plugin sorts min/max automatically
-rectangularArea:
-  x1: 0
-  y1: 0
-  z1: 0
-  x2: 100
-  y2: 100
-  z2: 100
+# A custom box and/or center point can be set with /spawnelytra setup and
+# /spawnelytra center - stored in area.yml, takes priority over the settings
+# above without changing them. Run /spawnelytra info to see what's active.
 
 # Game Mode Restrictions
 # ======================
-# Survival is always allowed and Creative is always disabled - neither can be changed here.
 
 # Disable spawn elytra flight while in Adventure mode
 disableInAdventure: false
 
-# Boost Settings
-# ==============
+# Maintenance
+# ============
 
-# Enable/disable the boost feature entirely
-# When true: Players can press F (swap hands) to boost while flying
-# When false: No boost functionality available
-boostEnabled: true
-
-# Boost strength multiplier
-# Higher values = stronger boost, lower values = gentler boost
-# Recommended range: 2-8 (5 is a good balance)
-# Warning: Values above 10 may be too strong and cause client lag
-multiplyValue: 5
-
-# Direction of boost when pressing F key
-# Options:
-#   "forward" - Boosts player in the direction they're looking (default)
-#   "upward"  - Boosts player straight up vertically
-boostDirection: forward
-
-# How many times a player can boost during a single flight
-# Default: 1 (same as before - one boost per flight)
-totalBoosts: 1
-
-# Cooldown in seconds between boosts, only relevant if totalBoosts is greater than 1
-# Default: 0 (no cooldown between boosts)
-boostToBoostCooldown: 0
-
-# Block using firework rockets to boost while flying via spawn elytra
-# Only applies while flying without a real elytra equipped (this plugin's own flight mode)
-# Does NOT affect firework use while wearing a real elytra
-disableFireworksInSpawnElytra: true
-
-# Sound & Feedback
-# ================
-
-# Sound played when player uses boost
-# Must be a valid Bukkit Sound enum value
-# Popular options:
-#   ENTITY_BAT_TAKEOFF          - Bat wing sound (default)
-#   ENTITY_FIREWORK_ROCKET_BLAST - Firework explosion
-#   ITEM_ELYTRA_FLYING          - Elytra whoosh sound
-#   ENTITY_ENDER_DRAGON_FLAP    - Dragon wing flap
-# Full list: https://hub.spigotmc.org/javadocs/bukkit/org/bukkit/Sound.html
-boostSound: ENTITY_BAT_TAKEOFF
-
-# Message Settings
-# ================
-
-# Message shown to players when they activate elytra flight
-# %key% will be replaced with the boost key hint
-# Use color codes with & (example: &aGreen text)
-message: "Press %key% to boost yourself."
-
-# Show boost activation message in action bar
-# When true: Shows "Boost activated!" when player uses boost
-showBoostMessage: true
-
-# Show flight activation message with boost key hint
-# When true: Shows the message above when player starts flying
-showActivationMessage: true
-
-# Enable bStats metrics collection
-# When true: Collects anonymous usage statistics to help improve the plugin
-# When false: No data is sent to bStats
+# Anonymous usage statistics via bStats
 enableMetrics: true
 
-# Check for updates on Modrinth at startup
-# When true: Notifies console and online ops if a new version is available
-# When false: No update check is performed
+# Check for updates on Modrinth at startup, notifying console and online ops
 checkForUpdates: true
 
-# Enable debug logging
-# When true: Logs verbose save/load info to console (useful for troubleshooting)
-# When false: Only important messages are logged
+# Verbose save/load logging to console, useful for troubleshooting
 debugMode: false
 
-# Permission Settings
-# ===================
-# Permissions are defined in plugin.yml but referenced here for clarity:
-#
+# --- Permissions (defined in plugin.yml, referenced here for clarity) ---
 # spawnelytra.use      - Allows using elytra flight (default: true)
-# spawnelytra.useboost - Allows using boost functionality (default: true)  
+# spawnelytra.useboost - Allows using boost functionality (default: true)
 # spawnelytra.admin    - Allows admin commands like /spawnelytra reload (default: op)
 # spawnelytra.*        - All permissions (default: op)
 
