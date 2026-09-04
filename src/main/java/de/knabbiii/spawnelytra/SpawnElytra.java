@@ -22,6 +22,10 @@ public class SpawnElytra extends JavaPlugin {
         return instance;
     }
 
+    public SpawnBoostListener getListener() {
+        return listener;
+    }
+
     @Override
     public void onEnable() {
         instance = this;
@@ -42,9 +46,11 @@ public class SpawnElytra extends JavaPlugin {
         }
 
         listener.loadData();
+        listener.detectOnlineBedrockPlayers();
         SpawnElytraCommand commandHandler = new SpawnElytraCommand();
         Objects.requireNonNull(getCommand("spawnelytra")).setExecutor(commandHandler);
         Objects.requireNonNull(getCommand("spawnelytra")).setTabCompleter(commandHandler);
+        getServer().getPluginManager().registerEvents(commandHandler, this);
         
         getLogger().info("SpawnElytra v" + getDescription().getVersion() + " enabled!");
     }
@@ -76,6 +82,7 @@ public class SpawnElytra extends JavaPlugin {
         if (DataManager.getInstance() != null) {
             listener.loadData(); // Load data into new listener
         }
+        listener.detectOnlineBedrockPlayers();
         getServer().getPluginManager().registerEvents(listener, this);
 
         getLogger().info("SpawnElytra configuration reloaded!");

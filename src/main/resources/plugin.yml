@@ -11,7 +11,9 @@ commands:
   spawnelytra:
     description: Main SpawnElytra command
     aliases: [se, selytra]
-    usage: /<command> [reload|info]
+    usage: /<command> [reload|info|visualize|setup|center]
+    permission: spawnelytra.admin
+    permission-message: You don't have permission to use this command.
 
 permissions:
   spawnelytra.use:
