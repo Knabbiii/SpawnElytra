@@ -3,6 +3,7 @@ package de.knabbiii.spawnelytra.listener;
 import de.knabbiii.spawnelytra.SpawnElytra;
 import de.knabbiii.spawnelytra.data.AreaConfig;
 import de.knabbiii.spawnelytra.data.DataManager;
+import de.knabbiii.spawnelytra.data.MessagesConfig;
 import de.knabbiii.spawnelytra.util.BedrockSupport;
 import de.knabbiii.spawnelytra.util.UpdateChecker;
 import net.md_5.bungee.api.ChatMessageType;
@@ -11,6 +12,9 @@ import net.md_5.bungee.api.chat.ComponentBuilder;
 import net.md_5.bungee.api.chat.KeybindComponent;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -79,13 +83,24 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     private final int totalBoosts;
     private final long boostToBoostCooldownMs;
     private final boolean disableFireworksInSpawnElytra;
+    private final long maxFlightDurationMs;
+    private final boolean flightTimerSound;
+    private final boolean showFlightTimerBossBar;
+    private final boolean showFlightTimerCountdown;
+    private final boolean showFlightTimerTimeoutMessage;
+    private final Map<UUID, Long> flightStartTime = new HashMap<>();
+    private final Map<UUID, BossBar> flightBossBars = new HashMap<>();
+    private final Map<UUID, Integer> lastCountdownSecondShown = new HashMap<>();
+    private final Set<UUID> fallImmuneAfterTimeout = new HashSet<>();
+    private final FileConfiguration messages;
 
     public static SpawnBoostListener create(Plugin plugin) {
         var config = plugin.getConfig();
-        if (!config.contains("multiplyValue") || !config.contains("spawnRadius") || !config.contains("boostEnabled") || !config.contains("world") || !config.contains("message")) {
+        if (!config.contains("multiplyValue") || !config.contains("spawnRadius") || !config.contains("boostEnabled") || !config.contains("world")) {
             plugin.saveResource("config.yml", true);
             plugin.reloadConfig();
         }
+        FileConfiguration messages = MessagesConfig.load(plugin);
 
         String soundName = config.getString("boostSound", "ENTITY_BAT_TAKEOFF");
         Sound sound;
@@ -150,7 +165,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 customSpawnX, customSpawnY, customSpawnZ,
                 config.getBoolean("boostEnabled"),
                 world,
-                config.getString("message"),
+                MessagesConfig.getMessage(messages, "javaActivation", "Press %key% to boost yourself."),
                 sound,
                 config.getString("boostDirection", "forward"),
                 config.getBoolean("showBoostMessage", true),
@@ -158,7 +173,13 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 config.getBoolean("disableInAdventure", false),
                 Math.max(1, config.getInt("totalBoosts", 1)),
                 Math.max(0L, (long) (config.getDouble("boostToBoostCooldown", 0) * 1000)),
-                config.getBoolean("disableFireworksInSpawnElytra", false));
+                config.getBoolean("disableFireworksInSpawnElytra", false),
+                Math.max(0L, config.getInt("maxFlightDuration", 0) * 1000L),
+                config.getBoolean("flightTimerSound", true),
+                config.getBoolean("showFlightTimerBossBar", true),
+                config.getBoolean("showFlightTimerCountdown", true),
+                config.getBoolean("showFlightTimerTimeoutMessage", true),
+                messages);
     }
 
     private SpawnBoostListener(Plugin plugin, int multiplyValue, int spawnRadius, boolean ignoreYInSpawnRadius,
@@ -169,7 +190,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                                boolean showBoostMessage, boolean showActivationMessage,
                                boolean disableInAdventure,
                                int totalBoosts, long boostToBoostCooldownMs,
-                               boolean disableFireworksInSpawnElytra) {
+                               boolean disableFireworksInSpawnElytra,
+                               long maxFlightDurationMs, boolean flightTimerSound,
+                               boolean showFlightTimerBossBar, boolean showFlightTimerCountdown,
+                               boolean showFlightTimerTimeoutMessage, FileConfiguration messages) {
         this.plugin = plugin;
         this.multiplyValue = multiplyValue;
         this.spawnRadius = spawnRadius;
@@ -197,6 +221,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         this.keyTempElytra = new NamespacedKey(plugin, "temp_elytra");
         this.keyStoredChestplate = new NamespacedKey(plugin, "stored_chestplate");
         this.disableFireworksInSpawnElytra = disableFireworksInSpawnElytra;
+        this.maxFlightDurationMs = maxFlightDurationMs;
+        this.flightTimerSound = flightTimerSound;
+        this.showFlightTimerBossBar = showFlightTimerBossBar;
+        this.showFlightTimerCountdown = showFlightTimerCountdown;
+        this.showFlightTimerTimeoutMessage = showFlightTimerTimeoutMessage;
+        this.messages = messages;
 
         this.runTaskTimer(this.plugin, 0, 5);
     }
@@ -220,6 +250,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                     flying.remove(playerUUID);
                     managedPlayers.remove(playerUUID);
                     resetBoosts(playerUUID);
+                    clearFlightTimer(playerUUID);
                     saveData();
                 }
                 return;
@@ -231,7 +262,20 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             if (isCurrentlyFlying || player.isGliding()) {
                 // Keep allowFlight disabled while flying/gliding to prevent re-triggering
                 player.setAllowFlight(false);
-                showBoostCooldownIfActive(player, playerUUID);
+
+                // Flight-timer feedback takes priority over the boost actionbar. The countdown
+                // itself uses a title (center screen), which never collides with the boost
+                // actionbar (bottom of screen) - but the final "time's up" message on
+                // force-land IS an actionbar message, so skip the boost cooldown actionbar in
+                // that exact tick to guarantee it can't get immediately overwritten by a stale
+                // boost message.
+                boolean justForceLanded = false;
+                if (isCurrentlyFlying && maxFlightDurationMs > 0) {
+                    justForceLanded = updateFlightTimer(player, playerUUID);
+                }
+                if (!justForceLanded) {
+                    showBoostCooldownIfActive(player, playerUUID);
+                }
             } else if (inSpawnRadius) {
                 // Player is in spawn radius - give them flight if they don't have it, and track
                 // them as managed either way (even if allowFlight was already true - e.g. left
@@ -289,6 +333,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         flying.add(playerUUID);
         saveData();
         managedPlayers.remove(playerUUID); // No longer managed - now in flight mode
+
+        if (maxFlightDurationMs > 0) {
+            startFlightTimer(player);
+        }
         gracePeriod.add(playerUUID);
 
         // Now set flight states
@@ -303,7 +351,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         if (showActivationMessage && boostEnabled && player.hasPermission("spawnelytra.useboost")) {
             if (isBedrock) {
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
-                    new ComponentBuilder("§aPress SNEAK to boost yourself!").create());
+                    new ComponentBuilder(msg("bedrockActivation", "&aPress SNEAK to boost yourself!")).create());
             } else {
                 String[] messageParts = message.split("%key%");
                 try {
@@ -321,10 +369,12 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     @EventHandler
     public void onDamage(EntityDamageEvent event) {
-        if (event.getEntityType() == EntityType.PLAYER
-                && (event.getCause() == EntityDamageEvent.DamageCause.FALL
-                || event.getCause() == EntityDamageEvent.DamageCause.FLY_INTO_WALL)
-                && flying.contains(event.getEntity().getUniqueId())) {
+        if (event.getEntityType() != EntityType.PLAYER) return;
+        if (event.getCause() != EntityDamageEvent.DamageCause.FALL
+                && event.getCause() != EntityDamageEvent.DamageCause.FLY_INTO_WALL) return;
+
+        UUID playerUUID = event.getEntity().getUniqueId();
+        if (flying.contains(playerUUID) || fallImmuneAfterTimeout.remove(playerUUID)) {
             event.setCancelled(true);
         }
     }
@@ -386,10 +436,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         String text;
         if (remainingMs > 0) {
             long remainingSeconds = (remainingMs + 999) / 1000; // round up to the next full second
-            text = "§7Next boost in " + remainingSeconds + "s";
+            text = msg("boostCooldown", "&7Next boost in %seconds%s").replace("%seconds%", String.valueOf(remainingSeconds));
         } else if (boostReadyAnnounced.add(playerUUID)) {
             // Cooldown just expired - show this once, not on every tick afterwards
-            text = "§aYou can boost now!";
+            text = msg("boostReady", "&aYou can boost now!");
         } else {
             return;
         }
@@ -422,8 +472,9 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
         if (showBoostMessage) {
             String text = totalBoosts > 1
-                    ? "§aBoost activated! §7(" + used + "/" + totalBoosts + ")"
-                    : "§aBoost activated!";
+                    ? msg("boostActivatedWithCount", "&aBoost activated! &7(%count%/%total%)")
+                        .replace("%count%", String.valueOf(used)).replace("%total%", String.valueOf(totalBoosts))
+                    : msg("boostActivated", "&aBoost activated!");
             try {
                 BaseComponent[] components = new ComponentBuilder(text).create();
                 player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
@@ -453,6 +504,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
                 player.setGliding(false);
                 resetBoosts(playerUUID);
                 restoreChestplateIfPresent(player);
+                clearFlightTimer(playerUUID);
 
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
                     flying.remove(playerUUID);
@@ -475,6 +527,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             flying.remove(playerUUID);
             resetBoosts(playerUUID);
             managedPlayers.remove(playerUUID);
+            clearFlightTimer(playerUUID);
             saveData();
             restoreChestplateIfPresent(player);
         } else if (managedPlayers.contains(playerUUID)) {
@@ -596,6 +649,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         resetBoosts(playerUUID);
         flying.remove(playerUUID);
         managedPlayers.remove(playerUUID);
+        clearFlightTimer(playerUUID);
         saveData();
         restoreChestplateIfPresent(player);
     }
@@ -608,6 +662,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         bedrockPlayers.remove(playerUUID);
         BedrockSupport.forget(playerUUID);
         boostReadyAnnounced.remove(playerUUID);
+        clearFlightTimer(playerUUID);
+        fallImmuneAfterTimeout.remove(playerUUID);
     }
 
     @EventHandler
@@ -629,6 +685,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             // Clean up flying state
             flying.remove(playerUUID);
             resetBoosts(playerUUID);
+            clearFlightTimer(playerUUID);
 
             saveData();
         }
@@ -662,6 +719,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
 
     private Location getSpawnCenter() {
         return new Location(world, customSpawnX, customSpawnY, customSpawnZ);
+    }
+
+    private String msg(String key, String def) {
+        return MessagesConfig.getMessage(messages, key, def);
     }
 
     private boolean isGameModeAllowed(GameMode gameMode) {
@@ -701,6 +762,110 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         boostCount.remove(playerUUID);
         lastBoostTime.remove(playerUUID);
         boostReadyAnnounced.remove(playerUUID);
+    }
+
+    private void startFlightTimer(Player player) {
+        UUID playerUUID = player.getUniqueId();
+        flightStartTime.put(playerUUID, System.currentTimeMillis());
+
+        if (showFlightTimerBossBar) {
+            BossBar bar = Bukkit.createBossBar(
+                    msg("flightTimerBossBar", "Flight time: %seconds%s").replace("%seconds%", String.valueOf(maxFlightDurationMs / 1000)),
+                    BarColor.GREEN, BarStyle.SOLID);
+            bar.setProgress(1.0);
+            bar.addPlayer(player);
+            flightBossBars.put(playerUUID, bar);
+        }
+    }
+
+    /**
+     * Returns true if the player was just force-landed this call - the caller should then
+     * skip the boost cooldown actionbar for this tick, since forceLandDueToTimeout() just
+     * sent its own "time's up" actionbar message and it must not get immediately
+     * overwritten by a stale boost message within the same tick.
+     */
+    private boolean updateFlightTimer(Player player, UUID playerUUID) {
+        Long startTime = flightStartTime.get(playerUUID);
+        if (startTime == null) return false;
+
+        long remaining = maxFlightDurationMs - (System.currentTimeMillis() - startTime);
+        if (remaining <= 0) {
+            forceLandDueToTimeout(player);
+            return true;
+        }
+
+        BossBar bar = flightBossBars.get(playerUUID);
+        if (bar != null) {
+            bar.setProgress(Math.max(0.0, Math.min(1.0, (double) remaining / maxFlightDurationMs)));
+            bar.setColor(remaining <= 3000 ? BarColor.RED
+                    : remaining <= maxFlightDurationMs / 3.0 ? BarColor.YELLOW : BarColor.GREEN);
+            bar.setTitle(msg("flightTimerBossBar", "Flight time: %seconds%s")
+                    .replace("%seconds%", String.valueOf((remaining + 999) / 1000)));
+        }
+
+        if (remaining <= 3000) {
+            int displaySecond = (int) Math.ceil(remaining / 1000.0);
+            Integer lastShown = lastCountdownSecondShown.get(playerUUID);
+            if (lastShown == null || lastShown != displaySecond) {
+                lastCountdownSecondShown.put(playerUUID, displaySecond);
+                if (showFlightTimerCountdown) {
+                    player.sendTitle(msg("flightTimerCountdown", "&c%seconds%").replace("%seconds%", String.valueOf(displaySecond)), "", 0, 25, 5);
+                }
+                if (flightTimerSound) {
+                    player.playSound(player.getLocation(), Sound.ENTITY_ARROW_HIT_PLAYER, 0.5f, 1.5f);
+                }
+            }
+        }
+
+        return false;
+    }
+
+    private void forceLandDueToTimeout(Player player) {
+        UUID playerUUID = player.getUniqueId();
+
+        clearFlightTimer(playerUUID);
+
+        player.setGliding(false);
+        if (!hasNativeFlight(player.getGameMode())) {
+            player.setAllowFlight(false);
+        }
+        resetBoosts(playerUUID);
+        restoreChestplateIfPresent(player);
+        flying.remove(playerUUID);
+        managedPlayers.remove(playerUUID);
+
+        fallImmuneAfterTimeout.add(playerUUID);
+
+        saveData();
+
+        if (showFlightTimerTimeoutMessage) {
+            player.sendTitle(msg("flightTimerTimeUpTitle", "&cFlight time's up!"), "", 0, 30, 10);
+        }
+        if (flightTimerSound) {
+            player.playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 0.5f, 1.0f);
+        }
+        if (!showFlightTimerTimeoutMessage) return;
+        try {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
+                    new ComponentBuilder(msg("flightTimerTimeUpActionbar", "&cYour flight time ran out!")).create());
+        } catch (NoClassDefFoundError | NoSuchMethodError ignored) {
+            // No BungeeChat API available
+        }
+    }
+
+    /**
+     * Clears all flight-timer state for a player (start time, countdown title tracking,
+     * boss bar) - called from every place flying/managedPlayers cleanup already happens,
+     * so the boss bar never lingers after a normal landing, death, world/gamemode change,
+     * disconnect, or the timeout landing itself.
+     */
+    private void clearFlightTimer(UUID playerUUID) {
+        flightStartTime.remove(playerUUID);
+        lastCountdownSecondShown.remove(playerUUID);
+        BossBar bar = flightBossBars.remove(playerUUID);
+        if (bar != null) {
+            bar.removeAll();
+        }
     }
 
     private boolean isTempElytra(ItemStack item) {
@@ -1067,6 +1232,8 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         super.cancel();
         visualizationTasks.values().forEach(BukkitTask::cancel);
         visualizationTasks.clear();
+        flightBossBars.values().forEach(BossBar::removeAll);
+        flightBossBars.clear();
     }
 
     /**

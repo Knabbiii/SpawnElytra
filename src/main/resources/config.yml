@@ -28,9 +28,6 @@ multiplyValue: 5
 #   "upward"     - straight up
 boostDirection: forward
 
-# Message shown when flight activates - %key% becomes the boost key hint, & for color codes
-message: "Press %key% to boost yourself."
-
 
 # Boost Limits
 # ================
@@ -46,6 +43,18 @@ boostToBoostCooldown: 0
 disableFireworksInSpawnElytra: true
 
 
+# Flight Duration Limit
+# =====================
+
+# Maximum flight duration in seconds before a player is forced to land.
+# Set to 0 to disable.
+# Shows a boss bar countdown, plus a title countdown in the last 3 seconds.
+maxFlightDuration: 0
+
+# Play a sound on each countdown second (last 3s) and when the flight is forced to end
+flightTimerSound: true
+
+
 # Sound & Messages
 # ================
 
@@ -56,8 +65,18 @@ boostSound: ENTITY_BAT_TAKEOFF
 # Show "Boost activated!" in the action bar when boosting
 showBoostMessage: true
 
-# Show the message above (with the boost key hint) when flight activates
+# Show the activation message (with the boost key hint) when flight activates -
+# edit the text itself in messages.yml ("javaActivation"/"bedrockActivation")
 showActivationMessage: true
+
+# Show the boss bar countdown during a timed flight (maxFlightDuration)
+showFlightTimerBossBar: true
+
+# Show the big countdown number in the last 3 seconds of a timed flight
+showFlightTimerCountdown: true
+
+# Show the "time's up" title/actionbar message when a timed flight is force-landed
+showFlightTimerTimeoutMessage: true
 
 
 # ==================

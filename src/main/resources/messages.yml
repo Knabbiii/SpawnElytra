@@ -1,0 +1,31 @@
+# ===========================================
+# SpawnElytra - Player-Facing Messages
+# ===========================================
+# Customize the text shown to players here. Supports & color codes (e.g. &aGreen text).
+# Placeholders (only where mentioned below):
+#   %key%     - the boost key hint (Java only)
+#   %count%   - how many boosts used so far this flight
+#   %total%   - totalBoosts from config.yml
+#   %seconds% - a countdown value in seconds
+
+# Shown when flight activates
+javaActivation: "Press %key% to boost yourself."
+bedrockActivation: "&aPress SNEAK to boost yourself!"
+
+# Shown when a boost is used
+boostActivated: "&aBoost activated!"
+
+# Same, but shown instead when totalBoosts (config.yml) is greater than 1
+boostActivatedWithCount: "&aBoost activated! &7(%count%/%total%)"
+
+# Shown while waiting for the next boost, only relevant if totalBoosts > 1
+boostCooldown: "&7Next boost in %seconds%s"
+
+# Shown once when the boost cooldown ends
+boostReady: "&aYou can boost now!"
+
+# Flight duration limit (maxFlightDuration in config.yml)
+flightTimerBossBar: "Flight time: %seconds%s"
+flightTimerCountdown: "&c%seconds%"
+flightTimerTimeUpTitle: "&cFlight time's up!"
+flightTimerTimeUpActionbar: "&cYour flight time ran out!"
