@@ -908,6 +908,10 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
     }
 
     private void restoreChestplateIfPresent(Player player) {
+        // Only Bedrock players ever get a chestplate backed up (see equipVirtualElytraIfBedrock) -
+        // without this check, a Java player's real chestplate would get wiped to null here, since
+        // takeStoredChestplate() returns null when nothing was ever stored for them.
+        if (!player.getPersistentDataContainer().has(keyStoredChestplate, PersistentDataType.BYTE_ARRAY)) return;
         player.getInventory().setChestplate(takeStoredChestplate(player));
     }
 
