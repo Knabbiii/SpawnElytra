@@ -145,13 +145,19 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             double x2 = rectSource.getDouble("rectangularArea.x2", 0);
             double y2 = rectSource.getDouble("rectangularArea.y2", 0);
             double z2 = rectSource.getDouble("rectangularArea.z2", 0);
-            rectMinX = Math.min(x1, x2); rectMaxX = Math.max(x1, x2);
-            rectMinY = Math.min(y1, y2); rectMaxY = Math.max(y1, y2);
-            rectMinZ = Math.min(z1, z2); rectMaxZ = Math.max(z1, z2);
+            rectMinX = Math.min(x1, x2);
+            rectMaxX = Math.max(x1, x2);
+            rectMinY = Math.min(y1, y2);
+            rectMaxY = Math.max(y1, y2);
+            rectMinZ = Math.min(z1, z2);
+            rectMaxZ = Math.max(z1, z2);
         } else {
-            rectMinX = customSpawnX - spawnRadius; rectMaxX = customSpawnX + spawnRadius;
-            rectMinY = customSpawnY - spawnRadius; rectMaxY = customSpawnY + spawnRadius;
-            rectMinZ = customSpawnZ - spawnRadius; rectMaxZ = customSpawnZ + spawnRadius;
+            rectMinX = customSpawnX - spawnRadius;
+            rectMaxX = customSpawnX + spawnRadius;
+            rectMinY = customSpawnY - spawnRadius;
+            rectMaxY = customSpawnY + spawnRadius;
+            rectMinZ = customSpawnZ - spawnRadius;
+            rectMaxZ = customSpawnZ + spawnRadius;
         }
 
         return new SpawnBoostListener(
@@ -319,15 +325,7 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
         player.setAllowFlight(false);
 
         boolean isBedrock = bedrockPlayers.contains(player.getUniqueId());
-
-        // Bedrock: Equip virtual elytra
-        if (isBedrock) {
-            ItemStack currentChestplate = player.getInventory().getChestplate();
-            if (!isTempElytra(currentChestplate)) {
-                backupChestplate(player, currentChestplate);
-                player.getInventory().setChestplate(createTempElytra());
-            }
-        }
+        equipVirtualElytraIfBedrock(player, isBedrock);
 
         // Immediately add to flying list BEFORE starting glide to block rapid re-triggers
         flying.add(playerUUID);
@@ -347,23 +345,37 @@ public class SpawnBoostListener extends BukkitRunnable implements Listener {
             gracePeriod.remove(playerUUID);
         }, 5);
 
+        sendActivationMessage(player, isBedrock);
+    }
 
-        if (showActivationMessage && boostEnabled && player.hasPermission("spawnelytra.useboost")) {
-            if (isBedrock) {
-                player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
-                    new ComponentBuilder(msg("bedrockActivation", "&aPress SNEAK to boost yourself!")).create());
-            } else {
-                String[] messageParts = message.split("%key%");
-                try {
-                    BaseComponent[] components = new ComponentBuilder(messageParts[0])
-                            .append(new KeybindComponent("key.swapOffhand"))
-                            .append(messageParts[1])
-                            .create();
-                    player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
-                } catch (NoClassDefFoundError | NoSuchMethodError e) {
-                    player.sendMessage(message.replace("%key%", "[F]"));
-                }
-            }
+    private void equipVirtualElytraIfBedrock(Player player, boolean isBedrock) {
+        if (!isBedrock) return;
+
+        ItemStack currentChestplate = player.getInventory().getChestplate();
+        if (!isTempElytra(currentChestplate)) {
+            backupChestplate(player, currentChestplate);
+            player.getInventory().setChestplate(createTempElytra());
+        }
+    }
+
+    private void sendActivationMessage(Player player, boolean isBedrock) {
+        if (!showActivationMessage || !boostEnabled || !player.hasPermission("spawnelytra.useboost")) return;
+
+        if (isBedrock) {
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR,
+                new ComponentBuilder(msg("bedrockActivation", "&aPress SNEAK to boost yourself!")).create());
+            return;
+        }
+
+        String[] messageParts = message.split("%key%");
+        try {
+            BaseComponent[] components = new ComponentBuilder(messageParts[0])
+                    .append(new KeybindComponent("key.swapOffhand"))
+                    .append(messageParts[1])
+                    .create();
+            player.spigot().sendMessage(ChatMessageType.ACTION_BAR, components);
+        } catch (NoClassDefFoundError | NoSuchMethodError e) {
+            player.sendMessage(message.replace("%key%", "[F]"));
         }
     }
 
