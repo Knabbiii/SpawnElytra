@@ -18,67 +18,94 @@ A Minecraft plugin that enables elytra-like flight mechanics at spawn without re
 
 ## Features
 
-- **Double-jump to fly** - Activate elytra gliding anywhere within the spawn radius
-- **Enhanced boost mechanics** - Press F (Java) or Sneak (Bedrock) to get a speed boost while flying
-- **Bedrock/Geyser compatible** - Full support for Bedrock Edition players via GeyserMC, virtual elytra cannot be displaced by inventory actions
+- **Double-jump to fly** - Activate elytra gliding anywhere within the spawn area
+- **Circle or rectangle spawn area** - Use the classic radius, a fixed box, or draw one in-game with `/spawnelytra setup`
+- **Custom center point** - Move the flight area's center off the vanilla world spawn with `/spawnelytra center`
+- **Enhanced boost mechanics** - Press F (Java) or Sneak (Bedrock) to get a speed boost while flying, with optional multiple boosts per flight and a cooldown between them
+- **Max flight duration** - Optionally cap how long a single flight can last, with a boss bar and title countdown, so nobody can fly forever
+- **Bedrock/Geyser compatible** - Full support for Bedrock Edition players via GeyserMC or Floodgate, virtual elytra cannot be displaced by inventory actions
+- **Fully customizable messages** - Every player-facing message lives in `messages.yml` with color codes and placeholders
+- **Particle visualization** - `/spawnelytra visualize` outlines the current spawn area so admins can see exactly where it is
+- **Game mode restrictions** - Optionally disable flight in Adventure mode (Creative always keeps its own native flight instead)
 - **World-specific** - Configure which world the feature works in
-- **No fall damage** - Players won't take damage while using the elytra
+- **No fall damage** - Players won't take damage while using the elytra, or when a max-duration flight ends
 - **Lightweight** - Minimal performance impact with efficient event handling
-- **Sound effects** - Configurable boost sounds for better feedback
+- **Sound effects** - Configurable boost and flight-timer sounds for better feedback
 - **Update checker** - Notifies ops on first join after restart if a new version is available
-- **Admin commands** - `/spawnelytra reload` and `/spawnelytra info`
+- **Admin commands** - `/spawnelytra reload`, `info`, `visualize`, `setup`, `center`
 - **Permission system** - Fine-grained control over who can use what features
 - **Anonymous metrics** - Optional bStats integration (can be disabled in config)
-- **Flexible spawn radius** - Option to ignore Y coordinate so players can fly at any height within the radius
 
 ## Installation
 
 1. Download the latest `.jar` file from the [releases page](https://github.com/Knabbiii/SpawnElytra/releases)
 2. Place it in your server's `plugins` folder
 3. Restart your server
-4. Configure the plugin in `plugins/SpawnElytra/config.yml`
+4. Configure the plugin in `plugins/SpawnElytra/config.yml` (behavior) and `messages.yml` (player-facing text)
 
 ## Configuration
 
-The plugin uses the **world spawn point** as the center for flight activation. This is the exact location where players spawn when they first join the server or use the `/spawn` command. You can set this location using the `/setworldspawn` command.
+By default, the plugin uses the **world spawn point** as the center for flight activation - the exact location where players spawn when they first join the server or use `/spawn`. Set it with `/setworldspawn`, or override it independently with `/spawnelytra center`.
 
 ```yaml
 world: world                      # The world where the feature works
-spawnRadius: 50                   # Radius around spawn where players can start flying
+spawnRadius: 50                   # Radius around the center point where players can start flying
 boostEnabled: true                # Whether the boost feature is enabled
 multiplyValue: 5                  # Velocity multiplier for the boost
 boostDirection: forward           # Direction of boost: 'forward' or 'upward'
+totalBoosts: 1                    # How many boosts allowed per flight
+boostToBoostCooldown: 0           # Cooldown in seconds between boosts (if totalBoosts > 1)
+disableFireworksInSpawnElytra: true  # Block firework-rocket boosting while using spawn elytra
+maxFlightDuration: 0              # Force-land after this many seconds (0 = unlimited)
+flightTimerSound: true            # Play a sound with the flight-duration countdown
 boostSound: ENTITY_BAT_TAKEOFF    # Sound played when boosting
-message: "Press %key% to boost yourself."  # Action bar message (%key% = F/Sneak)
 showBoostMessage: true            # Show boost activation message
 showActivationMessage: true       # Show flight activation message
+showFlightTimerBossBar: true      # Show the boss bar while maxFlightDuration is active
+showFlightTimerCountdown: true    # Show the big title countdown in the last 3 seconds
+showFlightTimerTimeoutMessage: true  # Show the "time's up" message on force-land
 ignoreYInSpawnRadius: false       # When true: only X/Z distance checked (ignore height)
+spawnAreaMode: circle             # 'circle' (spawnRadius) or 'rectangle' (a box)
+disableInAdventure: false         # Disable flight in Adventure mode (Creative is always disabled)
 checkForUpdates: true             # Check Modrinth for updates on startup
 debugMode: false                  # When true: verbose save/load logging enabled
 enableMetrics: true               # Send anonymous usage statistics to bStats
 ```
 
+A custom rectangular area and/or center point set via `/spawnelytra setup`/`center` are stored in a separate, plugin-managed `area.yml` and take priority over the settings above - that way your own comments in `config.yml` are never touched. Run `/spawnelytra info` to see which area mode and center are actually active.
+
 ### Configuration Options
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `spawnRadius` | Radius around spawn where players can start flying | `50` |
+| `spawnRadius` | Radius around the center point where players can start flying | `50` |
 | `multiplyValue` | How much the velocity gets multiplied when boosting | `5` |
 | `boostEnabled` | Whether the boost feature is enabled | `true` |
 | `world` | The world where the feature works | `"world"` |
-| `message` | Action bar message shown to players (`%key%` = F key) | English message |
 | `boostSound` | Sound played when using boost | `ENTITY_BAT_TAKEOFF` |
 | `boostDirection` | Direction of boost: `forward` or `upward` | `forward` |
+| `totalBoosts` | Boosts allowed per flight | `1` |
+| `boostToBoostCooldown` | Cooldown in seconds between boosts (if `totalBoosts` > 1) | `0` |
+| `disableFireworksInSpawnElytra` | Block firework-rocket boosting while using spawn elytra | `true` |
+| `maxFlightDuration` | Force-land players after this many seconds of flight (`0` disables it) | `0` |
+| `flightTimerSound` | Play a sound with the flight-duration countdown/timeout | `true` |
 | `showBoostMessage` | Show "Boost activated!" message | `true` |
-| `showActivationMessage` | Show activation message with F key hint | `true` |
+| `showActivationMessage` | Show activation message with boost key hint | `true` |
+| `showFlightTimerBossBar` | Show the boss bar while `maxFlightDuration` is active | `true` |
+| `showFlightTimerCountdown` | Show the big title countdown in the last 3 seconds | `true` |
+| `showFlightTimerTimeoutMessage` | Show the "time's up" title/actionbar on force-land | `true` |
 | `ignoreYInSpawnRadius` | When `true`: only horizontal distance (X/Z) is checked, height is ignored | `false` |
+| `spawnAreaMode` | `circle` (radius) or `rectangle` (a box, custom or auto-sized) | `circle` |
+| `disableInAdventure` | Disable spawn elytra flight in Adventure mode | `false` |
 | `checkForUpdates` | Check Modrinth for updates on startup, notify first op to join | `true` |
 | `debugMode` | Enable verbose save/load logging for troubleshooting | `false` |
 | `enableMetrics` | Send anonymous usage statistics to bStats | `true` |
 
+All player-facing text (boost messages, activation hints, flight-timer countdown/title) lives in **`messages.yml`**, with `&` color codes and placeholders like `%key%`, `%count%`, `%total%` and `%seconds%`.
+
 ## How to Use
 
-1. **Enter the spawn area** (within the configured radius)
+1. **Enter the spawn area** (within the configured radius or box)
 2. **Double-jump** (press space twice quickly) to start flying
 3. **Use elytra controls** to glide around
 4. **Press F** (swap hands) to boost forward while flying
@@ -88,8 +115,11 @@ enableMetrics: true               # Send anonymous usage statistics to bStats
 
 | Command | Permission | Description |
 |---------|------------|-------------|
-| `/spawnelytra info` | None | Show plugin information and current config |
+| `/spawnelytra info` | `spawnelytra.admin` | Show plugin info, including the currently active area mode/center |
 | `/spawnelytra reload` | `spawnelytra.admin` | Reload plugin configuration |
+| `/spawnelytra visualize [seconds]` | `spawnelytra.admin` | Outline the current spawn area with particles |
+| `/spawnelytra setup` | `spawnelytra.admin` | Wizard to define a custom rectangular spawn area (`pos1`/`pos2`/`save`/`cancel`/`reset`) |
+| `/spawnelytra center [reset]` | `spawnelytra.admin` | Set (or reset) a custom flight-area center point |
 
 **Aliases:** `/se`, `/selytra`
 

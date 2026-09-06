@@ -5,70 +5,55 @@ on:
     tags:
       - 'v*'  # Trigger on version tags like v2.0, v2.1, etc.
 
+permissions:
+  contents: write
+
 jobs:
   release:
     runs-on: ubuntu-latest
-    
+
     steps:
     - uses: actions/checkout@v4
-    
+
     - name: Set up JDK 21
       uses: actions/setup-java@v4
       with:
         java-version: '21'
         distribution: 'temurin'
-        
+
     - name: Setup Gradle
       uses: gradle/gradle-build-action@v2
-      
+
     - name: Build with Gradle
       run: ./gradlew build
-      
+
     - name: Get version from tag
       id: get_version
       run: echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_OUTPUT
-      
+
     - name: Create Release
-      id: create_release
-      uses: actions/create-release@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      uses: softprops/action-gh-release@v2
       with:
-        tag_name: ${{ github.ref }}
-        release_name: SpawnElytra v${{ steps.get_version.outputs.VERSION }}
+        name: SpawnElytra v${{ steps.get_version.outputs.VERSION }}
+        # Globs instead of a hardcoded name, so a stale/renamed jar can never break this again.
+        files: build/libs/*.jar
+        # Auto-generated from merged PRs/commits since the previous tag - always accurate,
+        # never goes stale like a hand-written list would.
+        generate_release_notes: true
         body: |
-          ## What's Changed
-          
           **SpawnElytra v${{ steps.get_version.outputs.VERSION }}**
-          
-          ### Features
-          - ✈️ Double-jump to activate elytra flight at spawn
-          - 🚀 Boost mechanics with F key (configurable)
-          - 🌍 World-specific configuration
-          - 🛡️ No fall damage while flying
-          - ⚡ Lightweight and efficient
-          
+
+          📋 Full formatted release notes (SpigotMC/Modrinth/CurseForge/Discord): [.github/RELEASE-${{ steps.get_version.outputs.VERSION }}.md](https://github.com/${{ github.repository }}/blob/v${{ steps.get_version.outputs.VERSION }}/.github/RELEASE-${{ steps.get_version.outputs.VERSION }}.md)
+
           ### Installation
-          1. Download `SpawnElytra-${{ steps.get_version.outputs.VERSION }}.jar`
-          2. Place in your server's `plugins` folder
+          1. Download `SpawnElytra-${{ steps.get_version.outputs.VERSION }}.jar` below
+          2. Place it in your server's `plugins` folder
           3. Restart your server
-          4. Configure in `plugins/SpawnElytra/config.yml`
-          
+          4. Configure in `plugins/SpawnElytra/config.yml` and `messages.yml`
+
           ### Requirements
-          - Minecraft 1.21+
+          - Minecraft 1.20.1+
           - Spigot/Paper or compatible server
           - Java 21+
-          
-          **Full Changelog**: https://github.com/${{ github.repository }}/compare/v${{ steps.get_version.outputs.VERSION }}...v${{ steps.get_version.outputs.VERSION }}
         draft: false
         prerelease: false
-        
-    - name: Upload Release Asset
-      uses: actions/upload-release-asset@v1
-      env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      with:
-        upload_url: ${{ steps.create_release.outputs.upload_url }}
-        asset_path: ./build/libs/craftattackspawnelytra-${{ steps.get_version.outputs.VERSION }}.jar
-        asset_name: SpawnElytra-${{ steps.get_version.outputs.VERSION }}.jar
-        asset_content_type: application/java-archive
