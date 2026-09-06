@@ -20,7 +20,7 @@ spawnRadius: 50
 # Enable/disable the boost feature (pressing F / Sneak while flying)
 boostEnabled: true
 
-# Boost strength - higher = stronger. Recommended: 2-8 (values above 10 may feel too strong)
+# Boost strength - higher = stronger. Recommended: 2-8
 multiplyValue: 5
 
 # Boost direction:
