@@ -145,7 +145,7 @@ public class SpawnElytraListener {
         }
         
         player.setDeltaMovement(velocity);
-        player.hurtMarked = true;
+        player.syncVelocity = true;
         
         try {
             Identifier soundLocation = Identifier.parse(boostSound);
